@@ -2,49 +2,46 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>コパ競馬予想</title>
 
 <style>
 body{
-  font-family:sans-serif;
-  max-width:600px;
-  margin:auto;
-  padding:20px;
+    font-family:sans-serif;
+    max-width:600px;
+    margin:auto;
+    padding:20px;
 }
 
 input{
-  width:100%;
-  padding:10px;
-  margin:5px 0;
+    width:100%;
+    padding:10px;
+    margin-bottom:10px;
 }
 
 button{
-  padding:10px;
-  margin-top:10px;
+    width:100%;
+    padding:10px;
+    margin-bottom:10px;
 }
 
-.card{
-  border:1px solid #ddd;
-  padding:10px;
-  margin-top:10px;
+.horse{
+    border:1px solid #ddd;
+    padding:10px;
+    margin-bottom:10px;
 }
 </style>
+
 </head>
 <body>
 
-<h1>🐴 コパ競馬予想</h1>
+<h1>🐴コパ競馬予想</h1>
 
-<input id="horseName" placeholder="馬名">
+<input id="no" placeholder="馬番">
+<input id="name" placeholder="馬名">
+<input id="odds" placeholder="オッズ">
 
-<input id="horseOdds"
-       type="number"
-       step="0.1"
-       placeholder="単勝オッズ">
-
-<button onclick="addHorse()">
-追加
-</button>
+<button onclick="addHorse()">馬を追加</button>
 
 <div id="horseList"></div>
 
@@ -53,82 +50,60 @@ button{
 let horses =
 JSON.parse(
 localStorage.getItem("horses")
-|| "[]"
-);
+) || [];
 
 render();
 
 function addHorse(){
 
- const name =
- document.getElementById(
- "horseName"
- ).value;
+    horses.push({
+        no: document.getElementById("no").value,
+        name: document.getElementById("name").value,
+        odds: document.getElementById("odds").value
+    });
 
- const odds =
- document.getElementById(
- "horseOdds"
- ).value;
-
- if(!name || !odds){
-   return;
- }
-
- horses.push({
-   name,
-   odds
- });
-
- save();
- render();
-
- document.getElementById(
- "horseName"
- ).value="";
-
- document.getElementById(
- "horseOdds"
- ).value="";
+    save();
+    render();
 }
 
 function save(){
- localStorage.setItem(
- "horses",
- JSON.stringify(horses)
- );
+
+    localStorage.setItem(
+        "horses",
+        JSON.stringify(horses)
+    );
 }
 
 function render(){
 
- let html="";
+    let html="";
 
- horses.forEach((h,i)=>{
+    horses.forEach((h,i)=>{
 
-   html += `
-   <div class="card">
-   ${h.name}
-   (${h.odds}倍)
+        html += `
+        <div class="horse">
+            ${h.no}番
+            ${h.name}
+            ${h.odds}倍
 
-   <button onclick="
-   removeHorse(${i})
-   ">
-   削除
-   </button>
-   </div>
-   `;
- });
+            <button onclick="deleteHorse(${i})">
+                削除
+            </button>
+        </div>
+        `;
+    });
 
- document.getElementById(
- "horseList"
- ).innerHTML = html;
+    document.getElementById(
+        "horseList"
+    ).innerHTML=html;
 }
 
-function removeHorse(i){
+function deleteHorse(i){
 
- horses.splice(i,1);
+    horses.splice(i,1);
 
- save();
- render();
+    save();
+    render();
 }
 </script>
 
