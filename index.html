@@ -2,109 +2,162 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>コパ競馬予想</title>
 
 <style>
 body{
     font-family:sans-serif;
+    background:#f5f5f5;
+    margin:0;
+}
+
+.header{
+    background:#1976d2;
+    color:white;
+    padding:15px;
+    text-align:center;
+    font-size:24px;
+    font-weight:bold;
+}
+
+.container{
     max-width:600px;
     margin:auto;
-    padding:20px;
+    padding:15px;
+}
+
+.card{
+    background:white;
+    border-radius:12px;
+    padding:15px;
+    margin-bottom:15px;
+    box-shadow:0 2px 8px rgba(0,0,0,.1);
 }
 
 input{
     width:100%;
     padding:10px;
     margin-bottom:10px;
+    box-sizing:border-box;
 }
 
 button{
     width:100%;
-    padding:10px;
-    margin-bottom:10px;
+    padding:12px;
+    border:none;
+    border-radius:8px;
+    background:#1976d2;
+    color:white;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#0d5ab8;
 }
 
 .horse{
-    border:1px solid #ddd;
-    padding:10px;
-    margin-bottom:10px;
+    border-bottom:1px solid #ddd;
+    padding:10px 0;
 }
 </style>
 
 </head>
 <body>
 
-<h1>🐴コパ競馬予想</h1>
+<div class="header">
+🐴 コパ競馬予想
+</div>
 
-<input id="no" placeholder="馬番">
-<input id="name" placeholder="馬名">
-<input id="odds" placeholder="オッズ">
+<div class="container">
 
-<button onclick="addHorse()">馬を追加</button>
+    <div class="card">
 
-<div id="horseList"></div>
+        <h2>出馬表入力</h2>
+
+        <input
+            type="number"
+            id="horseNo"
+            placeholder="馬番">
+
+        <input
+            type="text"
+            id="horseName"
+            placeholder="馬名">
+
+        <input
+            type="number"
+            step="0.1"
+            id="horseOdds"
+            placeholder="単勝オッズ">
+
+        <button onclick="addHorse()">
+            馬を追加
+        </button>
+
+    </div>
+
+    <div class="card">
+
+        <h2>登録済み出走馬</h2>
+
+        <div id="horseList"></div>
+
+    </div>
+
+</div>
 
 <script>
 
-let horses =
-JSON.parse(
-localStorage.getItem("horses")
-) || [];
-
-render();
+let horses = [];
 
 function addHorse(){
 
+    const no =
+        document.getElementById("horseNo").value;
+
+    const name =
+        document.getElementById("horseName").value;
+
+    const odds =
+        document.getElementById("horseOdds").value;
+
+    if(!no || !name || !odds){
+        alert("すべて入力してください");
+        return;
+    }
+
     horses.push({
-        no: document.getElementById("no").value,
-        name: document.getElementById("name").value,
-        odds: document.getElementById("odds").value
+        no:no,
+        name:name,
+        odds:odds
     });
 
-    save();
-    render();
+    renderList();
+
+    document.getElementById("horseNo").value="";
+    document.getElementById("horseName").value="";
+    document.getElementById("horseOdds").value="";
 }
 
-function save(){
+function renderList(){
 
-    localStorage.setItem(
-        "horses",
-        JSON.stringify(horses)
-    );
-}
+    let html = "";
 
-function render(){
-
-    let html="";
-
-    horses.forEach((h,i)=>{
+    horses.forEach(function(horse){
 
         html += `
-        <div class="horse">
-            ${h.no}番
-            ${h.name}
-            ${h.odds}倍
-
-            <button onclick="deleteHorse(${i})">
-                削除
-            </button>
-        </div>
+            <div class="horse">
+                <strong>${horse.no}番 ${horse.name}</strong><br>
+                単勝 ${horse.odds}倍
+            </div>
         `;
     });
 
-    document.getElementById(
-        "horseList"
-    ).innerHTML=html;
+    document.getElementById("horseList").innerHTML =
+        html;
 }
 
-function deleteHorse(i){
-
-    horses.splice(i,1);
-
-    save();
-    render();
-}
 </script>
 
 </body>
