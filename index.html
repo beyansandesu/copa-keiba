@@ -1,12 +1,136 @@
-HTML
 <!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>コパ競馬予想</title>
+
+<style>
+body{
+  font-family:sans-serif;
+  max-width:600px;
+  margin:auto;
+  padding:20px;
+}
+
+input{
+  width:100%;
+  padding:10px;
+  margin:5px 0;
+}
+
+button{
+  padding:10px;
+  margin-top:10px;
+}
+
+.card{
+  border:1px solid #ddd;
+  padding:10px;
+  margin-top:10px;
+}
+</style>
 </head>
 <body>
+
 <h1>🐴 コパ競馬予想</h1>
-<p>GitHub Pages公開成功！</p>
+
+<input id="horseName" placeholder="馬名">
+
+<input id="horseOdds"
+       type="number"
+       step="0.1"
+       placeholder="単勝オッズ">
+
+<button onclick="addHorse()">
+追加
+</button>
+
+<div id="horseList"></div>
+
+<script>
+
+let horses =
+JSON.parse(
+localStorage.getItem("horses")
+|| "[]"
+);
+
+render();
+
+function addHorse(){
+
+ const name =
+ document.getElementById(
+ "horseName"
+ ).value;
+
+ const odds =
+ document.getElementById(
+ "horseOdds"
+ ).value;
+
+ if(!name || !odds){
+   return;
+ }
+
+ horses.push({
+   name,
+   odds
+ });
+
+ save();
+ render();
+
+ document.getElementById(
+ "horseName"
+ ).value="";
+
+ document.getElementById(
+ "horseOdds"
+ ).value="";
+}
+
+function save(){
+ localStorage.setItem(
+ "horses",
+ JSON.stringify(horses)
+ );
+}
+
+function render(){
+
+ let html="";
+
+ horses.forEach((h,i)=>{
+
+   html += `
+   <div class="card">
+   ${h.name}
+   (${h.odds}倍)
+
+   <button onclick="
+   removeHorse(${i})
+   ">
+   削除
+   </button>
+   </div>
+   `;
+ });
+
+ document.getElementById(
+ "horseList"
+ ).innerHTML = html;
+}
+
+function removeHorse(i){
+
+ horses.splice(i,1);
+
+ save();
+ render();
+}
+</script>
+
 </body>
 </html>
