@@ -1,38 +1,104 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>コパ競馬予想</title>
-<style>
-body{
-    font-family:sans-serif;
-    max-width:600px;
-    margin:auto;
-    padding:20px;
-}
-h1{
-    color:#1976d2;
-}
-.card{
-    border:1px solid #ddd;
-    border-radius:10px;
-    padding:15px;
-    margin-top:10px;
-}
-</style>
-</head>
 <body>
+
+<div style="max-width:700px;margin:auto;padding:20px;">
 
 <h1>🐴 コパ競馬予想</h1>
 
-<div class="card">
-    GitHub Pages公開成功！
+<div style="border:1px solid #ccc;padding:15px;border-radius:8px;">
+
+<h3>レース情報</h3>
+
+<input
+id="raceName"
+type="text"
+placeholder="例：札幌11R"
+style="width:100%;padding:10px;">
+
 </div>
 
-<div class="card">
-    ハル専用競馬アプリ開発中
+<br>
+
+<div style="border:1px solid #ccc;padding:15px;border-radius:8px;">
+
+<h3>出馬表入力</h3>
+
+<input
+id="horseNo"
+type="number"
+placeholder="馬番"
+style="width:100%;padding:10px;margin-bottom:10px;">
+
+<input
+id="horseName"
+type="text"
+placeholder="馬名"
+style="width:100%;padding:10px;margin-bottom:10px;">
+
+<input
+id="horseOdds"
+type="number"
+step="0.1"
+placeholder="オッズ"
+style="width:100%;padding:10px;margin-bottom:10px;">
+
+<button onclick="addHorse()">
+馬を追加
+</button>
+
 </div>
+
+<br>
+
+<div id="horseList"></div>
+
+</div>
+
+<script>
+
+let horses=[];
+
+function addHorse(){
+
+const no=document.getElementById("horseNo").value;
+const name=document.getElementById("horseName").value;
+const odds=document.getElementById("horseOdds").value;
+
+horses.push({
+no,
+name,
+odds
+});
+
+renderList();
+}
+
+function renderList(){
+
+let html="";
+
+horses.forEach(horse=>{
+
+html+=`
+<div style="
+border:1px solid #ddd;
+padding:10px;
+margin-top:10px;
+border-radius:8px;
+">
+
+${horse.no}番
+${horse.name}
+(${horse.odds}倍)
+
+</div>
+`;
+
+});
+
+document.getElementById("horseList").innerHTML=html;
+
+}
+
+</script>
 
 </body>
-</html>
