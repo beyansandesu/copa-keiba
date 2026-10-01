@@ -2,157 +2,37 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>コパ競馬予想</title>
-
 <style>
 body{
-  font-family:sans-serif;
-  background:#f5f5f5;
-  margin:0;
+    font-family:sans-serif;
+    max-width:600px;
+    margin:auto;
+    padding:20px;
 }
-
-header{
-  background:#1976d2;
-  color:white;
-  text-align:center;
-  padding:20px;
-  font-size:24px;
-  font-weight:bold;
+h1{
+    color:#1976d2;
 }
-
 .card{
-  background:white;
-  margin:15px;
-  padding:15px;
-  border-radius:10px;
-}
-
-input{
-  width:100%;
-  padding:10px;
-  margin-bottom:10px;
-  box-sizing:border-box;
-}
-
-button{
-  width:100%;
-  padding:12px;
-  border:none;
-  background:#1976d2;
-  color:white;
-  border-radius:8px;
-  cursor:pointer;
-}
-
-.horse{
-  border-bottom:1px solid #ddd;
-  padding:10px 0;
+    border:1px solid #ddd;
+    border-radius:10px;
+    padding:15px;
+    margin-top:10px;
 }
 </style>
 </head>
-
 <body>
 
-<header>
-🐴 コパ競馬予想
-</header>
+<h1>🐴 コパ競馬予想</h1>
 
 <div class="card">
-
-<h3>出馬表入力</h3>
-
-<input id="horseNo" placeholder="馬番">
-
-<input id="horseName" placeholder="馬名">
-
-<input id="horseOdds" placeholder="単勝オッズ">
-
-<button onclick="addHorse()">
-馬を追加
-</button>
-
+    GitHub Pages公開成功！
 </div>
 
 <div class="card">
-
-<h3>登録済み出走馬</h3>
-
-<div id="horseList"></div>
-
+    ハル専用競馬アプリ開発中
 </div>
-
-<script>
-
-let horses=[];
-
-function addHorse(){
-
- const no=
- document.getElementById('horseNo').value;
-
- const name=
- document.getElementById('horseName').value;
-
- const odds=
- document.getElementById('horseOdds').value;
-
- if(!no||!name||!odds){
-   alert('入力してください');
-   return;
- }
-
- horses.push({
-   no,
-   name,
-   odds
- });
-
- renderList();
-
- localStorage.setItem(
-   'horses',
-   JSON.stringify(horses)
- );
-}
-
-function renderList(){
-
- let html='';
-
- horses.forEach(h=>{
-
- html+=`
- <div class="horse">
- ${h.no}番 ${h.name}
- <br>
- ${h.odds}倍
- </div>
- `;
-
- });
-
- document.getElementById(
- 'horseList'
- ).innerHTML=html;
-}
-
-window.onload=()=>{
-
- const saved=
- localStorage.getItem('horses');
-
- if(saved){
-
-   horses=
-   JSON.parse(saved);
-
-   renderList();
- }
-
-}
-
-</script>
 
 </body>
 </html>
