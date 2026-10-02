@@ -2,41 +2,117 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>コパ競馬予想</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>コパの競馬予想</title>
 
 <style>
 body{
     font-family:sans-serif;
-    text-align:center;
     background:#f5f5f5;
-    padding:30px;
+    margin:0;
+}
+
+.header{
+    background:#1976d2;
+    color:white;
+    text-align:center;
+    padding:20px;
+    font-size:28px;
+    font-weight:bold;
+}
+
+.container{
+    max-width:800px;
+    margin:auto;
+    padding:20px;
 }
 
 .card{
     background:white;
-    max-width:500px;
-    margin:auto;
-    padding:20px;
-    border-radius:12px;
-    box-shadow:0 2px 10px rgba(0,0,0,.1);
+    padding:15px;
+    border-radius:10px;
+    margin-bottom:15px;
 }
 
-h1{
-    color:#1976d2;
+input{
+    width:100%;
+    padding:10px;
+    margin-bottom:10px;
+    box-sizing:border-box;
+}
+
+button{
+    padding:10px;
+    margin-right:5px;
+    cursor:pointer;
+}
+
+.add-btn{
+    width:100%;
+    background:#1976d2;
+    color:white;
+    border:none;
+}
+
+.edit-btn{
+    background:#4CAF50;
+    color:white;
+    border:none;
+}
+
+.delete-btn{
+    background:#f44336;
+    color:white;
+    border:none;
+}
+
+.horse{
+    border:1px solid #ddd;
+    border-radius:8px;
+    padding:10px;
+    margin-top:10px;
 }
 </style>
 </head>
 
 <body>
 
-<div class="card">
-    <h1>🐴 コパ競馬予想</h1>
-
-    <p>GitHub Pages公開成功！</p>
-
-    <p>ハル専用競馬アプリ開発中</p>
+<div class="header">
+🐴 コパの競馬予想
 </div>
 
-</body>
-</html>
+<div class="container">
+
+<div class="card">
+
+<h3>レース情報</h3>
+
+<input
+id="raceName"
+placeholder="例：札幌11R">
+
+</div>
+
+<div class="card">
+
+<h3>出馬表入力</h3>
+
+<input
+id="horseNo"
+placeholder="馬番">
+
+<input
+id="horseName"
+placeholder="馬名">
+
+<input
+id="horseOdds"
+placeholder="単勝オッズ">
+
+<button
+class="add-btn"
+onclick="addHorse()">
+馬を追加
+</button>
+
+</div
