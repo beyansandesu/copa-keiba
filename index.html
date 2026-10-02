@@ -1,6 +1,123 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>コパの競馬予想</title>
+
+<style>
+body{
+    margin:0;
+    background:#f5f5f5;
+    font-family:sans-serif;
+}
+
+.header{
+    background:#1976d2;
+    color:white;
+    text-align:center;
+    padding:20px;
+    font-size:32px;
+    font-weight:bold;
+}
+
+.container{
+    max-width:900px;
+    margin:auto;
+    padding:20px;
+}
+
+.card{
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    margin-bottom:20px;
+}
+
+input{
+    width:100%;
+    padding:10px;
+    margin-bottom:10px;
+    box-sizing:border-box;
+}
+
+button{
+    padding:10px;
+    border:none;
+    border-radius:6px;
+    cursor:pointer;
+}
+
+.add-btn{
+    width:100%;
+    background:#1976d2;
+    color:white;
+}
+
+.edit-btn{
+    background:#4caf50;
+    color:white;
+}
+
+.delete-btn{
+    background:#f44336;
+    color:white;
+}
+
+.horse{
+    border:1px solid #ddd;
+    border-radius:8px;
+    padding:12px;
+    margin-top:10px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+🐴 コパの競馬予想
+</div>
+
+<div class="container">
+
 <div class="card">
 
-<h3>登録済み出走馬</h3>
+<h2>レース情報</h2>
+
+<input
+id="raceName"
+placeholder="例：札幌11R">
+
+</div>
+
+<div class="card">
+
+<h2>出馬表入力</h2>
+
+<input
+id="horseNo"
+placeholder="馬番">
+
+<input
+id="horseName"
+placeholder="馬名">
+
+<input
+id="horseOdds"
+placeholder="単勝オッズ">
+
+<button
+class="add-btn"
+onclick="addHorse()">
+馬を追加
+</button>
+
+</div>
+
+<div class="card">
+
+<h2>登録済み出走馬</h2>
 
 <div id="horseList"></div>
 
@@ -39,7 +156,7 @@ document.getElementById("horseOdds").value;
 
 if(!no || !name || !odds){
 
-alert("入力してください");
+alert("すべて入力してください");
 return;
 
 }
@@ -51,22 +168,50 @@ odds
 });
 
 saveData();
+
 renderList();
 
+document.getElementById(
+"horseNo"
+).value="";
+
+document.getElementById(
+"horseName"
+).value="";
+
+document.getElementById(
+"horseOdds"
+).value="";
 }
 
 function editHorse(index){
 
-const horse = horses[index];
+const horse =
+horses[index];
 
 const no =
-prompt("馬番", horse.no);
+prompt(
+"馬番",
+horse.no
+);
+
+if(no===null) return;
 
 const name =
-prompt("馬名", horse.name);
+prompt(
+"馬名",
+horse.name
+);
+
+if(name===null) return;
 
 const odds =
-prompt("オッズ", horse.odds);
+prompt(
+"オッズ",
+horse.odds
+);
+
+if(odds===null) return;
 
 horses[index]={
 no,
@@ -86,6 +231,7 @@ if(confirm("削除しますか？")){
 horses.splice(index,1);
 
 saveData();
+
 renderList();
 
 }
@@ -101,29 +247,28 @@ horses.forEach((horse,index)=>{
 html += `
 <div class="horse">
 
-<b>${horse.no}番
-${horse.name}</b>
+<b>
+${horse.no}番
+${horse.name}
+</b>
 
-<br>
+<br><br>
 
-オッズ ${horse.odds}倍
+単勝オッズ：
+${horse.odds}倍
 
 <br><br>
 
 <button
 class="edit-btn"
 onclick="editHorse(${index})">
-
 ✏️編集
-
 </button>
 
 <button
 class="delete-btn"
 onclick="deleteHorse(${index})">
-
 🗑削除
-
 </button>
 
 </div>
