@@ -55,8 +55,9 @@ button{
 }
 
 .edit-btn{
-    background:#4caf50;
+    background:#4CAF50;
     color:white;
+    margin-right:5px;
 }
 
 .delete-btn{
@@ -102,6 +103,10 @@ placeholder="馬番">
 <input
 id="horseName"
 placeholder="馬名">
+
+<input
+id="horseJockey"
+placeholder="騎手">
 
 <input
 id="horseOdds"
@@ -151,10 +156,13 @@ document.getElementById("horseNo").value;
 const name =
 document.getElementById("horseName").value;
 
+const jockey =
+document.getElementById("horseJockey").value;
+
 const odds =
 document.getElementById("horseOdds").value;
 
-if(!no || !name || !odds){
+if(!no || !name || !jockey || !odds){
 
 alert("すべて入力してください");
 return;
@@ -162,13 +170,15 @@ return;
 }
 
 horses.push({
+
 no,
 name,
+jockey,
 odds
+
 });
 
 saveData();
-
 renderList();
 
 document.getElementById(
@@ -177,6 +187,10 @@ document.getElementById(
 
 document.getElementById(
 "horseName"
+).value="";
+
+document.getElementById(
+"horseJockey"
 ).value="";
 
 document.getElementById(
@@ -190,33 +204,32 @@ const horse =
 horses[index];
 
 const no =
-prompt(
-"馬番",
-horse.no
-);
+prompt("馬番", horse.no);
 
 if(no===null) return;
 
 const name =
-prompt(
-"馬名",
-horse.name
-);
+prompt("馬名", horse.name);
 
 if(name===null) return;
 
+const jockey =
+prompt("騎手", horse.jockey);
+
+if(jockey===null) return;
+
 const odds =
-prompt(
-"オッズ",
-horse.odds
-);
+prompt("オッズ", horse.odds);
 
 if(odds===null) return;
 
 horses[index]={
+
 no,
 name,
+jockey,
 odds
+
 };
 
 saveData();
@@ -231,7 +244,6 @@ if(confirm("削除しますか？")){
 horses.splice(index,1);
 
 saveData();
-
 renderList();
 
 }
@@ -251,6 +263,11 @@ html += `
 ${horse.no}番
 ${horse.name}
 </b>
+
+<br><br>
+
+騎手：
+${horse.jockey}
 
 <br><br>
 
