@@ -52,6 +52,13 @@ button{
     width:100%;
     background:#1976d2;
     color:white;
+    margin-bottom:10px;
+}
+
+.json-btn{
+    width:100%;
+    background:#ff9800;
+    color:white;
 }
 
 .edit-btn{
@@ -118,6 +125,12 @@ onclick="addHorse()">
 馬を追加
 </button>
 
+<button
+class="json-btn"
+onclick="exportJSON()">
+💾 JSON保存
+</button>
+
 </div>
 
 <div class="card">
@@ -181,27 +194,16 @@ odds
 saveData();
 renderList();
 
-document.getElementById(
-"horseNo"
-).value="";
+document.getElementById("horseNo").value="";
+document.getElementById("horseName").value="";
+document.getElementById("horseJockey").value="";
+document.getElementById("horseOdds").value="";
 
-document.getElementById(
-"horseName"
-).value="";
-
-document.getElementById(
-"horseJockey"
-).value="";
-
-document.getElementById(
-"horseOdds"
-).value="";
 }
 
 function editHorse(index){
 
-const horse =
-horses[index];
+const horse = horses[index];
 
 const no =
 prompt("馬番", horse.no);
@@ -223,7 +225,7 @@ prompt("オッズ", horse.odds);
 
 if(odds===null) return;
 
-horses[index]={
+horses[index] = {
 
 no,
 name,
@@ -250,9 +252,57 @@ renderList();
 
 }
 
+function exportJSON(){
+
+const raceName =
+document.getElementById(
+"raceName"
+).value;
+
+const data = {
+
+raceName: raceName,
+
+horses: horses
+
+};
+
+const json =
+JSON.stringify(
+data,
+null,
+2
+);
+
+const blob =
+new Blob(
+[json],
+{
+type:"application/json"
+}
+);
+
+const url =
+URL.createObjectURL(blob);
+
+const a =
+document.createElement("a");
+
+a.href = url;
+
+a.download =
+(raceName || "race")
++ ".json";
+
+a.click();
+
+URL.revokeObjectURL(url);
+
+}
+
 function renderList(){
 
-let html="";
+let html = "";
 
 horses.forEach((horse,index)=>{
 
