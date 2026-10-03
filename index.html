@@ -42,32 +42,38 @@ input{
 }
 
 button{
+    width:100%;
     padding:10px;
+    margin-bottom:10px;
     border:none;
     border-radius:6px;
     cursor:pointer;
 }
 
 .add-btn{
-    width:100%;
     background:#1976d2;
     color:white;
-    margin-bottom:10px;
 }
 
-.json-btn{
-    width:100%;
+.save-btn{
     background:#ff9800;
     color:white;
 }
 
+.load-btn{
+    background:#4CAF50;
+    color:white;
+}
+
 .edit-btn{
+    width:auto;
     background:#4CAF50;
     color:white;
     margin-right:5px;
 }
 
 .delete-btn{
+    width:auto;
     background:#f44336;
     color:white;
 }
@@ -103,21 +109,10 @@ placeholder="例：札幌11R">
 
 <h2>出馬表入力</h2>
 
-<input
-id="horseNo"
-placeholder="馬番">
-
-<input
-id="horseName"
-placeholder="馬名">
-
-<input
-id="horseJockey"
-placeholder="騎手">
-
-<input
-id="horseOdds"
-placeholder="単勝オッズ">
+<input id="horseNo" placeholder="馬番">
+<input id="horseName" placeholder="馬名">
+<input id="horseJockey" placeholder="騎手">
+<input id="horseOdds" placeholder="単勝オッズ">
 
 <button
 class="add-btn"
@@ -126,9 +121,20 @@ onclick="addHorse()">
 </button>
 
 <button
-class="json-btn"
+class="save-btn"
 onclick="exportJSON()">
 💾 JSON保存
+</button>
+
+<input
+type="file"
+id="jsonFile"
+accept=".json">
+
+<button
+class="load-btn"
+onclick="importJSON()">
+📂 JSON読込
 </button>
 
 </div>
@@ -205,27 +211,19 @@ function editHorse(index){
 
 const horse = horses[index];
 
-const no =
-prompt("馬番", horse.no);
-
+const no = prompt("馬番", horse.no);
 if(no===null) return;
 
-const name =
-prompt("馬名", horse.name);
-
+const name = prompt("馬名", horse.name);
 if(name===null) return;
 
-const jockey =
-prompt("騎手", horse.jockey);
-
+const jockey = prompt("騎手", horse.jockey);
 if(jockey===null) return;
 
-const odds =
-prompt("オッズ", horse.odds);
-
+const odds = prompt("オッズ", horse.odds);
 if(odds===null) return;
 
-horses[index] = {
+horses[index]={
 
 no,
 name,
@@ -246,6 +244,7 @@ if(confirm("削除しますか？")){
 horses.splice(index,1);
 
 saveData();
+
 renderList();
 
 }
@@ -267,16 +266,15 @@ horses: horses
 
 };
 
-const json =
+const blob =
+new Blob(
+[
 JSON.stringify(
 data,
 null,
 2
-);
-
-const blob =
-new Blob(
-[json],
+)
+],
 {
 type:"application/json"
 }
@@ -297,6 +295,51 @@ a.download =
 a.click();
 
 URL.revokeObjectURL(url);
+
+}
+
+function importJSON(){
+
+const file =
+document.getElementById(
+"jsonFile"
+).files[0];
+
+if(!file){
+
+alert("JSONファイルを選択してください");
+return;
+
+}
+
+const reader =
+new FileReader();
+
+reader.onload =
+function(event){
+
+const data =
+JSON.parse(
+event.target.result
+);
+
+document.getElementById(
+"raceName"
+).value =
+data.raceName || "";
+
+horses =
+data.horses || [];
+
+saveData();
+
+renderList();
+
+alert("読込完了");
+
+};
+
+reader.readAsText(file);
 
 }
 
