@@ -86,6 +86,12 @@ button{
     margin-top:10px;
 }
 
+.rank{
+    font-size:20px;
+    font-weight:bold;
+    color:#d32f2f;
+}
+
 </style>
 </head>
 
@@ -130,6 +136,10 @@ placeholder="騎手">
 <input
 id="horseWeight"
 placeholder="斤量">
+
+<input
+id="horseRank"
+placeholder="評価（◎ ○ ▲ △ ×）">
 
 <input
 id="horseOdds"
@@ -191,34 +201,25 @@ JSON.stringify(horses)
 function addHorse(){
 
 const frame =
-document.getElementById(
-"horseFrame"
-).value;
+document.getElementById("horseFrame").value;
 
 const no =
-document.getElementById(
-"horseNo"
-).value;
+document.getElementById("horseNo").value;
 
 const name =
-document.getElementById(
-"horseName"
-).value;
+document.getElementById("horseName").value;
 
 const jockey =
-document.getElementById(
-"horseJockey"
-).value;
+document.getElementById("horseJockey").value;
 
 const weight =
-document.getElementById(
-"horseWeight"
-).value;
+document.getElementById("horseWeight").value;
+
+const rank =
+document.getElementById("horseRank").value;
 
 const odds =
-document.getElementById(
-"horseOdds"
-).value;
+document.getElementById("horseOdds").value;
 
 if(
 !frame ||
@@ -226,6 +227,7 @@ if(
 !name ||
 !jockey ||
 !weight ||
+!rank ||
 !odds
 ){
 
@@ -241,11 +243,13 @@ no,
 name,
 jockey,
 weight,
+rank,
 odds
 
 });
 
 saveData();
+
 renderList();
 
 document.getElementById("horseFrame").value="";
@@ -253,43 +257,41 @@ document.getElementById("horseNo").value="";
 document.getElementById("horseName").value="";
 document.getElementById("horseJockey").value="";
 document.getElementById("horseWeight").value="";
+document.getElementById("horseRank").value="";
 document.getElementById("horseOdds").value="";
 
 }
 
 function editHorse(index){
 
-const horse =
-horses[index];
+const horse = horses[index];
 
 const frame =
 prompt("枠番",horse.frame);
-
 if(frame===null) return;
 
 const no =
 prompt("馬番",horse.no);
-
 if(no===null) return;
 
 const name =
 prompt("馬名",horse.name);
-
 if(name===null) return;
 
 const jockey =
 prompt("騎手",horse.jockey);
-
 if(jockey===null) return;
 
 const weight =
 prompt("斤量",horse.weight);
-
 if(weight===null) return;
+
+const rank =
+prompt("評価（◎○▲△×）",horse.rank);
+if(rank===null) return;
 
 const odds =
 prompt("単勝オッズ",horse.odds);
-
 if(odds===null) return;
 
 horses[index]={
@@ -299,6 +301,7 @@ no,
 name,
 jockey,
 weight,
+rank,
 odds
 
 };
@@ -345,8 +348,7 @@ null,
 )
 ],
 {
-type:
-"application/json"
+type:"application/json"
 }
 );
 
@@ -356,9 +358,9 @@ URL.createObjectURL(blob);
 const a =
 document.createElement("a");
 
-a.href = url;
+a.href=url;
 
-a.download =
+a.download=
 (raceName || "race")
 + ".json";
 
@@ -377,9 +379,8 @@ document.getElementById(
 
 if(!file){
 
-alert(
-"JSONファイルを選択してください"
-);
+alert("JSONファイルを選択してください");
+
 return;
 
 }
@@ -430,6 +431,12 @@ ${horse.name}
 </b>
 
 <br><br>
+
+<div class="rank">
+評価：${horse.rank}
+</div>
+
+<br>
 
 騎手：
 ${horse.jockey}
