@@ -35,11 +35,16 @@ body{
     margin-bottom:20px;
 }
 
-input{
+input,
+textarea{
     width:100%;
     padding:10px;
     margin-bottom:10px;
     box-sizing:border-box;
+}
+
+textarea{
+    height:80px;
 }
 
 button{
@@ -90,6 +95,13 @@ button{
     font-size:20px;
     font-weight:bold;
     color:#d32f2f;
+}
+
+.memo{
+    background:#fffde7;
+    padding:10px;
+    border-radius:6px;
+    margin-top:10px;
 }
 
 </style>
@@ -144,6 +156,10 @@ placeholder="評価（◎ ○ ▲ △ ×）">
 <input
 id="horseOdds"
 placeholder="単勝オッズ">
+
+<textarea
+id="horseMemo"
+placeholder="メモ（札幌巧者、距離延長歓迎など）"></textarea>
 
 <button
 class="add-btn"
@@ -221,6 +237,9 @@ document.getElementById("horseRank").value;
 const odds =
 document.getElementById("horseOdds").value;
 
+const memo =
+document.getElementById("horseMemo").value;
+
 if(
 !frame ||
 !no ||
@@ -231,7 +250,7 @@ if(
 !odds
 ){
 
-alert("すべて入力してください");
+alert("必須項目を入力してください");
 return;
 
 }
@@ -244,12 +263,12 @@ name,
 jockey,
 weight,
 rank,
-odds
+odds,
+memo
 
 });
 
 saveData();
-
 renderList();
 
 document.getElementById("horseFrame").value="";
@@ -259,6 +278,7 @@ document.getElementById("horseJockey").value="";
 document.getElementById("horseWeight").value="";
 document.getElementById("horseRank").value="";
 document.getElementById("horseOdds").value="";
+document.getElementById("horseMemo").value="";
 
 }
 
@@ -287,14 +307,18 @@ prompt("斤量",horse.weight);
 if(weight===null) return;
 
 const rank =
-prompt("評価（◎○▲△×）",horse.rank);
+prompt("評価",horse.rank);
 if(rank===null) return;
 
 const odds =
 prompt("単勝オッズ",horse.odds);
 if(odds===null) return;
 
-horses[index]={
+const memo =
+prompt("メモ",horse.memo || "");
+if(memo===null) return;
+
+horses[index] = {
 
 frame,
 no,
@@ -302,7 +326,8 @@ name,
 jockey,
 weight,
 rank,
-odds
+odds,
+memo
 
 };
 
@@ -358,9 +383,9 @@ URL.createObjectURL(blob);
 const a =
 document.createElement("a");
 
-a.href=url;
+a.href = url;
 
-a.download=
+a.download =
 (raceName || "race")
 + ".json";
 
@@ -380,7 +405,6 @@ document.getElementById(
 if(!file){
 
 alert("JSONファイルを選択してください");
-
 return;
 
 }
@@ -438,20 +462,27 @@ ${horse.name}
 
 <br>
 
-騎手：
-${horse.jockey}
+騎手：${horse.jockey}
 
 <br>
 
-斤量：
-${horse.weight}kg
+斤量：${horse.weight}kg
 
 <br><br>
 
-単勝オッズ：
-${horse.odds}倍
+単勝オッズ：${horse.odds}倍
 
-<br><br>
+<div class="memo">
+
+<b>メモ</b>
+
+<br>
+
+${horse.memo || "なし"}
+
+</div>
+
+<br>
 
 <button
 class="edit-btn"
