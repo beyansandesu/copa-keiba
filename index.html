@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>コパの競馬予想</title>
+<title>コパの競馬予想 Ver0.9</title>
 
 <style>
 
@@ -61,21 +61,10 @@ button{
     color:white;
 }
 
-.save-btn{
-    background:#ff9800;
-    color:white;
-}
-
-.load-btn{
-    background:#4CAF50;
-    color:white;
-}
-
 .edit-btn{
     width:auto;
     background:#4CAF50;
     color:white;
-    margin-right:5px;
 }
 
 .delete-btn{
@@ -97,6 +86,11 @@ button{
     color:#d32f2f;
 }
 
+.value{
+    color:#1565c0;
+    font-weight:bold;
+}
+
 .memo{
     background:#fffde7;
     padding:10px;
@@ -106,7 +100,6 @@ button{
 
 </style>
 </head>
-
 <body>
 
 <div class="header">
@@ -129,59 +122,30 @@ placeholder="例：札幌11R">
 
 <h2>出馬表入力</h2>
 
-<input
-id="horseFrame"
-placeholder="枠番">
+<input id="horseFrame" placeholder="枠番">
 
-<input
-id="horseNo"
-placeholder="馬番">
+<input id="horseNo" placeholder="馬番">
 
-<input
-id="horseName"
-placeholder="馬名">
+<input id="horseName" placeholder="馬名">
 
-<input
-id="horseJockey"
-placeholder="騎手">
+<input id="horseJockey" placeholder="騎手">
 
-<input
-id="horseWeight"
-placeholder="斤量">
+<input id="horseWeight" placeholder="斤量">
 
-<input
-id="horseRank"
-placeholder="評価（◎ ○ ▲ △ ×）">
+<input id="horseRank" placeholder="評価（◎ ○ ▲ △ ×）">
 
-<input
-id="horseOdds"
-placeholder="単勝オッズ">
+<input id="horseValue" placeholder="期待値ランク（S A B C D）">
+
+<input id="horseOdds" placeholder="単勝オッズ">
 
 <textarea
 id="horseMemo"
-placeholder="メモ（札幌巧者、距離延長歓迎など）"></textarea>
+placeholder="メモ"></textarea>
 
 <button
 class="add-btn"
 onclick="addHorse()">
 馬を追加
-</button>
-
-<button
-class="save-btn"
-onclick="exportJSON()">
-💾 JSON保存
-</button>
-
-<input
-type="file"
-id="jsonFile"
-accept=".json">
-
-<button
-class="load-btn"
-onclick="importJSON()">
-📂 JSON読込
 </button>
 
 </div>
@@ -234,6 +198,9 @@ document.getElementById("horseWeight").value;
 const rank =
 document.getElementById("horseRank").value;
 
+const value =
+document.getElementById("horseValue").value;
+
 const odds =
 document.getElementById("horseOdds").value;
 
@@ -247,6 +214,7 @@ if(
 !jockey ||
 !weight ||
 !rank ||
+!value ||
 !odds
 ){
 
@@ -263,6 +231,7 @@ name,
 jockey,
 weight,
 rank,
+value,
 odds,
 memo
 
@@ -277,6 +246,7 @@ document.getElementById("horseName").value="";
 document.getElementById("horseJockey").value="";
 document.getElementById("horseWeight").value="";
 document.getElementById("horseRank").value="";
+document.getElementById("horseValue").value="";
 document.getElementById("horseOdds").value="";
 document.getElementById("horseMemo").value="";
 
@@ -310,6 +280,10 @@ const rank =
 prompt("評価",horse.rank);
 if(rank===null) return;
 
+const value =
+prompt("期待値ランク",horse.value);
+if(value===null) return;
+
 const odds =
 prompt("単勝オッズ",horse.odds);
 if(odds===null) return;
@@ -326,6 +300,7 @@ name,
 jockey,
 weight,
 rank,
+value,
 odds,
 memo
 
@@ -349,99 +324,9 @@ renderList();
 
 }
 
-function exportJSON(){
-
-const raceName =
-document.getElementById(
-"raceName"
-).value;
-
-const data = {
-
-raceName,
-horses
-
-};
-
-const blob =
-new Blob(
-[
-JSON.stringify(
-data,
-null,
-2
-)
-],
-{
-type:"application/json"
-}
-);
-
-const url =
-URL.createObjectURL(blob);
-
-const a =
-document.createElement("a");
-
-a.href = url;
-
-a.download =
-(raceName || "race")
-+ ".json";
-
-a.click();
-
-URL.revokeObjectURL(url);
-
-}
-
-function importJSON(){
-
-const file =
-document.getElementById(
-"jsonFile"
-).files[0];
-
-if(!file){
-
-alert("JSONファイルを選択してください");
-return;
-
-}
-
-const reader =
-new FileReader();
-
-reader.onload =
-function(event){
-
-const data =
-JSON.parse(
-event.target.result
-);
-
-document.getElementById(
-"raceName"
-).value =
-data.raceName || "";
-
-horses =
-data.horses || [];
-
-saveData();
-renderList();
-
-alert("読込完了");
-
-};
-
-reader.readAsText(file);
-
-}
-
 function renderList(){
 
-let html="";
+let html = "";
 
 horses.forEach((horse,index)=>{
 
@@ -458,6 +343,10 @@ ${horse.name}
 
 <div class="rank">
 評価：${horse.rank}
+</div>
+
+<div class="value">
+期待値：${horse.value}
 </div>
 
 <br>
