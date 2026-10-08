@@ -394,8 +394,52 @@ document.getElementById(
 "horseList"
 ).innerHTML = html;
 
+updateSummary();
+}
+function updateSummary(){
+
+let mainHorse = "なし";
+
+const marks = [];
+
+horses.forEach(horse=>{
+
+if(horse.rank==="◎"){
+
+mainHorse =
+`◎ ${horse.name}
+（期待値:${horse.value}）`;
+
 }
 
+if(
+horse.rank==="◎" ||
+horse.rank==="○" ||
+horse.rank==="▲" ||
+horse.rank==="△"
+){
+
+marks.push(
+`${horse.rank} ${horse.name}`
+);
+
+}
+
+});
+
+document.getElementById(
+"mainHorse"
+).innerHTML =
+mainHorse;
+
+document.getElementById(
+"markList"
+).innerHTML =
+marks.length
+? marks.join("<br>")
+: "まだ登録されていません";
+
+}
 </script>
 
 </body>
