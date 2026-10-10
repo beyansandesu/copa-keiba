@@ -204,7 +204,57 @@ localStorage.getItem("horses")
 ) || [];
 
 renderList();
+function importBulk(){
 
+const text =
+document.getElementById(
+"bulkInput"
+).value.trim();
+
+if(!text){
+
+alert("データを入力してください");
+return;
+
+}
+
+const lines =
+text.split("\n");
+
+lines.forEach(line=>{
+
+const cols =
+line.split(",");
+
+if(cols.length < 5) return;
+
+horses.push({
+
+frame: cols[0].trim(),
+no: cols[1].trim(),
+name: cols[2].trim(),
+jockey: cols[3].trim(),
+weight: cols[4].trim(),
+
+rank:"",
+value:"",
+odds:"",
+memo:""
+
+});
+
+});
+
+saveData();
+renderList();
+
+document.getElementById(
+"bulkInput"
+).value="";
+
+alert("一括取込完了");
+
+}
 function saveData(){
 
 localStorage.setItem(
