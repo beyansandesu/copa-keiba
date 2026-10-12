@@ -556,7 +556,22 @@ const marks = [];
 
 horses.forEach(horse=>{
 
-if(horse.rank==="◎"){
+const totalPoint =
+
+getRankPoint(horse.rank)
++
+getValuePoint(horse.value);
+
+if(totalPoint > bestPoint){
+
+bestPoint = totalPoint;
+
+mainHorse =
+
+`${horse.name}
+（総合点:${totalPoint}）`;
+
+}
 
 mainHorse =
 `◎ ${horse.name}
