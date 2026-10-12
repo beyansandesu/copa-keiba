@@ -425,6 +425,10 @@ function renderList(){
 let html = "";
 
 horses.forEach((horse,index)=>{
+    const totalPoint =
+getRankPoint(horse.rank)
++
+getValuePoint(horse.value);
 
 html += `
 <div class="horse">
