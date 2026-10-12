@@ -503,6 +503,50 @@ document.getElementById(
 updateSummary();
 
 }
+function getRankPoint(rank){
+
+switch(rank){
+
+case "◎":
+return 5;
+
+case "○":
+return 4;
+
+case "▲":
+return 3;
+
+case "△":
+return 2;
+
+default:
+return 1;
+
+}
+
+}
+
+function getValuePoint(value){
+
+switch(value){
+
+case "S":
+return 5;
+
+case "A":
+return 4;
+
+case "B":
+return 3;
+
+case "C":
+return 2;
+
+default:
+return 1;
+
+}
+
 }
 function updateSummary(){
 
