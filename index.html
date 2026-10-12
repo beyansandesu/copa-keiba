@@ -425,10 +425,10 @@ function renderList(){
 let html = "";
 
 horses.forEach((horse,index)=>{
-    const totalPoint =
+const totalPoint =
 getRankPoint(horse.rank)
 +
-getValuePoint(horse.value || "D")
+getValuePoint(horse.value || "D");
 
 html += `
 <div class="horse">
