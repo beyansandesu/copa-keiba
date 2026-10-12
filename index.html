@@ -428,7 +428,8 @@ horses.forEach((horse,index)=>{
     const totalPoint =
 getRankPoint(horse.rank)
 +
-getValuePoint(horse.value);
+getValuePoint(horse.value || "D")
+``
 
 html += `
 <div class="horse">
