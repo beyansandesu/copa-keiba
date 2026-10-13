@@ -553,29 +553,24 @@ return 1;
 function updateSummary(){
 
 let mainHorse = "なし";
-    let bestPoint = -1;
+let bestPoint = -1;
 
 const marks = [];
 
 horses.forEach(horse=>{
 
 const totalPoint =
-
 getRankPoint(horse.rank)
 +
-getValuePoint(horse.value);
+getValuePoint(horse.value || "D");
 
 if(totalPoint > bestPoint){
 
 bestPoint = totalPoint;
 
 mainHorse =
-
 `${horse.name}
 （総合点:${totalPoint}）`;
-
-}
-
 
 }
 
@@ -607,7 +602,4 @@ marks.length
 : "まだ登録されていません";
 
 }
-</script>
-
-</body>
-</html>
+`
