@@ -225,3 +225,349 @@ onclick="importJSON()">
 </div>
 
 <script>
+let horses =
+JSON.parse(
+localStorage.getItem("horses")
+) || [];
+
+renderList();
+
+function saveData(){
+
+localStorage.setItem(
+"horses",
+JSON.stringify(horses)
+);
+
+}
+
+function importBulk(){
+
+const text =
+document.getElementById(
+"bulkInput"
+).value.trim();
+
+if(!text){
+
+alert("データを入力してください");
+return;
+
+}
+
+const lines =
+text.split("\n");
+
+lines.forEach(line=>{
+
+const cols =
+line.split(",");
+
+if(cols.length < 5) return;
+
+horses.push({
+
+frame: cols[0].trim(),
+no: cols[1].trim(),
+name: cols[2].trim(),
+jockey: cols[3].trim(),
+weight: cols[4].trim(),
+
+rank:"×",
+value:"D",
+odds:"",
+memo:""
+
+});
+
+});
+
+saveData();
+renderList();
+
+document.getElementById(
+"bulkInput"
+).value="";
+
+alert("一括取込完了");
+
+}
+
+function addHorse(){
+
+const frame =
+document.getElementById(
+"horseFrame"
+).value;
+
+const no =
+document.getElementById(
+"horseNo"
+).value;
+
+const name =
+document.getElementById(
+"horseName"
+).value;
+
+const jockey =
+document.getElementById(
+"horseJockey"
+).value;
+
+const weight =
+document.getElementById(
+"horseWeight"
+).value;
+
+const rank =
+document.getElementById(
+"horseRank"
+).value;
+
+const value =
+document.getElementById(
+"horseValue"
+).value;
+
+const odds =
+document.getElementById(
+"horseOdds"
+).value;
+
+const memo =
+document.getElementById(
+"horseMemo"
+).value;
+
+if(
+!frame ||
+!no ||
+!name ||
+!jockey ||
+!weight ||
+!rank ||
+!value ||
+!odds
+){
+
+alert("必須項目を入力してください");
+return;
+
+}
+
+horses.push({
+
+frame,
+no,
+name,
+jockey,
+weight,
+rank,
+value,
+odds,
+memo
+
+});
+
+saveData();
+renderList();
+
+document.getElementById("horseFrame").value="";
+document.getElementById("horseNo").value="";
+document.getElementById("horseName").value="";
+document.getElementById("horseJockey").value="";
+document.getElementById("horseWeight").value="";
+document.getElementById("horseRank").value="";
+document.getElementById("horseValue").value="";
+document.getElementById("horseOdds").value="";
+document.getElementById("horseMemo").value="";
+
+}
+
+function editHorse(index){
+
+const horse =
+horses[index];
+
+const frame =
+prompt("枠番",horse.frame);
+if(frame===null) return;
+
+const no =
+prompt("馬番",horse.no);
+if(no===null) return;
+
+const name =
+prompt("馬名",horse.name);
+if(name===null) return;
+
+const jockey =
+prompt("騎手",horse.jockey);
+if(jockey===null) return;
+
+const weight =
+prompt("斤量",horse.weight);
+if(weight===null) return;
+
+const rank =
+prompt("評価",horse.rank);
+if(rank===null) return;
+
+const value =
+prompt(
+"期待値ランク",
+horse.value
+);
+if(value===null) return;
+
+const odds =
+prompt(
+"単勝オッズ",
+horse.odds
+);
+if(odds===null) return;
+
+const memo =
+prompt(
+"メモ",
+horse.memo || ""
+);
+if(memo===null) return;
+
+horses[index] = {
+
+frame,
+no,
+name,
+jockey,
+weight,
+rank,
+value,
+odds,
+memo
+
+};
+
+saveData();
+renderList();
+
+}
+
+function deleteHorse(index){
+
+if(confirm("削除しますか？")){
+
+horses.splice(
+index,
+1
+);
+
+saveData();
+renderList();
+
+}
+
+}
+
+function exportJSON(){
+
+const raceName =
+document.getElementById(
+"raceName"
+).value;
+
+const data = {
+
+raceName,
+horses
+
+};
+
+const blob =
+new Blob(
+[
+JSON.stringify(
+data,
+null,
+2
+)
+],
+{
+type:"application/json"
+}
+);
+
+const url =
+URL.createObjectURL(
+blob
+);
+
+const a =
+document.createElement(
+"a"
+);
+
+a.href = url;
+
+a.download =
+(raceName || "race")
++ ".json";
+
+a.click();
+
+URL.revokeObjectURL(
+url
+);
+
+}
+
+function importJSON(){
+
+const file =
+document.getElementById(
+"jsonFile"
+).files[0];
+
+if(!file){
+
+alert(
+"JSONファイルを選択してください"
+);
+
+return;
+
+}
+
+const reader =
+new FileReader();
+
+reader.onload =
+function(event){
+
+const data =
+JSON.parse(
+event.target.result
+);
+
+document.getElementById(
+"raceName"
+).value =
+data.raceName || "";
+
+horses =
+data.horses || [];
+
+saveData();
+renderList();
+
+alert(
+"読込完了"
+);
+
+};
+
+reader.readAsText(file);
+
+}
+    
