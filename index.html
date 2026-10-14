@@ -44,7 +44,7 @@ textarea{
 }
 
 textarea{
-    height:80px;
+    min-height:100px;
 }
 
 button{
@@ -58,6 +58,16 @@ button{
 
 .add-btn{
     background:#1976d2;
+    color:white;
+}
+
+.save-btn{
+    background:#ff9800;
+    color:white;
+}
+
+.load-btn{
+    background:#4CAF50;
     color:white;
 }
 
@@ -100,10 +110,11 @@ button{
 
 </style>
 </head>
+
 <body>
 
 <div class="header">
-🐴 コパの競馬予想
+🐴 コパの競馬予想 Ver1.1
 </div>
 
 <div class="container">
@@ -117,6 +128,7 @@ id="raceName"
 placeholder="例：札幌11R">
 
 </div>
+
 <div class="card">
 
 <h2>🏆 今日の本命馬</h2>
@@ -136,7 +148,9 @@ placeholder="例：札幌11R">
 </div>
 
 </div>
+
 <div class="card">
+
 <h3>📥 出走表一括取込</h3>
 
 <textarea
@@ -148,6 +162,11 @@ class="add-btn"
 onclick="importBulk()">
 📥 一括取込
 </button>
+
+</div>
+
+<div class="card">
+
 <h2>出馬表入力</h2>
 
 <input id="horseFrame" placeholder="枠番">
@@ -193,7 +212,6 @@ onclick="importJSON()">
 📂 JSON読込
 </button>
 
-    
 </div>
 
 <div class="card">
@@ -207,442 +225,3 @@ onclick="importJSON()">
 </div>
 
 <script>
-
-let horses =
-JSON.parse(
-localStorage.getItem("horses")
-) || [];
-
-renderList();
-function importBulk(){
-
-const text =
-document.getElementById(
-"bulkInput"
-).value.trim();
-
-if(!text){
-
-alert("データを入力してください");
-return;
-
-}
-
-const lines =
-text.split("\n");
-
-lines.forEach(line=>{
-
-const cols =
-line.split(",");
-
-if(cols.length < 5) return;
-
-horses.push({
-
-frame: cols[0].trim(),
-no: cols[1].trim(),
-name: cols[2].trim(),
-jockey: cols[3].trim(),
-weight: cols[4].trim(),
-
-rank:"×",
-value:"D",
-odds:"",
-memo:""
-
-});
-
-saveData();
-renderList();
-`
-
-document.getElementById(
-"bulkInput"
-).value="";
-
-alert("一括取込完了");
-
-}
-function saveData(){
-
-function exportJSON(){
-
-const raceName =
-document.getElementById(
-"raceName"
-).value;
-
-const data = {
-
-raceName,
-horses
-
-};
-
-const blob =
-new Blob(
-[
-JSON.stringify(
-data,
-null,
-2
-)
-],
-{
-type:"application/json"
-}
-);
-
-const url =
-URL.createObjectURL(blob);
-
-const a =
-document.createElement("a");
-
-a.href = url;
-
-a.download =
-(raceName || "race")
-+ ".json";
-
-a.click();
-
-URL.revokeObjectURL(url);
-
-}
-
-localStorage.setItem(
-"horses",
-JSON.stringify(horses)
-);
-
-}
-
-function addHorse(){
-
-const frame =
-document.getElementById("horseFrame").value;
-
-const no =
-document.getElementById("horseNo").value;
-
-const name =
-document.getElementById("horseName").value;
-
-const jockey =
-document.getElementById("horseJockey").value;
-
-const weight =
-document.getElementById("horseWeight").value;
-
-const rank =
-document.getElementById("horseRank").value;
-
-const value =
-document.getElementById("horseValue").value;
-
-const odds =
-document.getElementById("horseOdds").value;
-
-const memo =
-document.getElementById("horseMemo").value;
-
-if(
-!frame ||
-!no ||
-!name ||
-!jockey ||
-!weight ||
-!rank ||
-!value ||
-!odds
-){
-
-alert("必須項目を入力してください");
-return;
-
-}
-
-horses.push({
-
-frame,
-no,
-name,
-jockey,
-weight,
-rank,
-value,
-odds,
-memo
-
-});
-
-saveData();
-renderList();
-
-document.getElementById("horseFrame").value="";
-document.getElementById("horseNo").value="";
-document.getElementById("horseName").value="";
-document.getElementById("horseJockey").value="";
-document.getElementById("horseWeight").value="";
-document.getElementById("horseRank").value="";
-document.getElementById("horseValue").value="";
-document.getElementById("horseOdds").value="";
-document.getElementById("horseMemo").value="";
-
-}
-
-function editHorse(index){
-
-const horse = horses[index];
-
-const frame =
-prompt("枠番",horse.frame);
-if(frame===null) return;
-
-const no =
-prompt("馬番",horse.no);
-if(no===null) return;
-
-const name =
-prompt("馬名",horse.name);
-if(name===null) return;
-
-const jockey =
-prompt("騎手",horse.jockey);
-if(jockey===null) return;
-
-const weight =
-prompt("斤量",horse.weight);
-if(weight===null) return;
-
-const rank =
-prompt("評価",horse.rank);
-if(rank===null) return;
-
-const value =
-prompt("期待値ランク",horse.value);
-if(value===null) return;
-
-const odds =
-prompt("単勝オッズ",horse.odds);
-if(odds===null) return;
-
-const memo =
-prompt("メモ",horse.memo || "");
-if(memo===null) return;
-
-horses[index] = {
-
-frame,
-no,
-name,
-jockey,
-weight,
-rank,
-value,
-odds,
-memo
-
-};
-
-saveData();
-renderList();
-
-}
-
-function deleteHorse(index){
-
-if(confirm("削除しますか？")){
-
-horses.splice(index,1);
-
-saveData();
-renderList();
-
-}
-
-}
-
-function renderList(){
-
-let html = "";
-
-horses.forEach((horse,index)=>{
-const totalPoint =
-getRankPoint(horse.rank)
-+
-getValuePoint(horse.value || "D");
-
-html += `
-<div class="horse">
-
-<b>
-${horse.frame}枠
-${horse.no}番
-${horse.name}
-</b>
-
-<br><br>
-
-<div class="rank">
-評価：${horse.rank}
-</div>
-
-<div class="value">
-期待値：${horse.value || "-"}
-<br>
-
-総合点：
-${totalPoint}
-
-<br>
-</div>
-
-<br>
-
-騎手：${horse.jockey}
-
-<br>
-
-斤量：${horse.weight}kg
-
-<br><br>
-
-単勝オッズ：${horse.odds}倍
-
-<div class="memo">
-
-<b>メモ</b>
-
-<br>
-
-${horse.memo || "なし"}
-
-</div>
-
-<br>
-
-<button
-class="edit-btn"
-onclick="editHorse(${index})">
-✏️編集
-</button>
-
-<button
-class="delete-btn"
-onclick="deleteHorse(${index})">
-🗑削除
-</button>
-
-</div>
-`;
-
-});
-
-document.getElementById(
-"horseList"
-).innerHTML = html;
-
-updateSummary();
-
-}
-function getRankPoint(rank){
-
-switch(rank){
-
-case "◎":
-return 5;
-
-case "○":
-return 4;
-
-case "▲":
-return 3;
-
-case "△":
-return 2;
-
-default:
-return 1;
-
-}
-
-}
-
-function getValuePoint(value){
-
-switch(value){
-
-case "S":
-return 5;
-
-case "A":
-return 4;
-
-case "B":
-return 3;
-
-case "C":
-return 2;
-
-default:
-return 1;
-
-}
-
-}
-function updateSummary(){
-
-let mainHorse = "なし";
-let bestPoint = -1;
-
-const marks = [];
-
-horses.forEach(horse=>{
-
-const totalPoint =
-getRankPoint(horse.rank)
-+
-getValuePoint(horse.value || "D");
-
-if(totalPoint > bestPoint){
-
-bestPoint = totalPoint;
-
-mainHorse =
-`${horse.name}
-（総合点:${totalPoint}）`;
-
-}
-
-if(
-horse.rank==="◎" ||
-horse.rank==="○" ||
-horse.rank==="▲" ||
-horse.rank==="△"
-){
-
-marks.push(
-`${horse.rank} ${horse.name}`
-);
-
-}
-
-});
-
-document.getElementById(
-"mainHorse"
-).innerHTML =
-mainHorse;
-
-document.getElementById(
-"markList"
-).innerHTML =
-marks.length
-? marks.join("<br>")
-: "まだ登録されていません";
-
-}
-`
