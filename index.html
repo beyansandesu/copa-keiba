@@ -570,4 +570,192 @@ alert(
 reader.readAsText(file);
 
 }
-    
+function getRankPoint(rank){
+
+switch(rank){
+
+case "◎":
+return 5;
+
+case "○":
+return 4;
+
+case "▲":
+return 3;
+
+case "△":
+return 2;
+
+default:
+return 1;
+
+}
+
+}
+
+function getValuePoint(value){
+
+switch(value){
+
+case "S":
+return 5;
+
+case "A":
+return 4;
+
+case "B":
+return 3;
+
+case "C":
+return 2;
+
+default:
+return 1;
+
+}
+
+}
+
+function renderList(){
+
+let html = "";
+
+horses.forEach((horse,index)=>{
+
+const totalPoint =
+getRankPoint(horse.rank)
++
+getValuePoint(horse.value || "D");
+
+html += `
+
+<div class="horse">
+
+<b>
+${horse.frame}枠
+${horse.no}番
+${horse.name}
+</b>
+
+<br><br>
+
+<div class="rank">
+評価：${horse.rank}
+</div>
+
+<div class="value">
+期待値：${horse.value}
+<br>
+総合点：${totalPoint}
+</div>
+
+<br>
+
+騎手：${horse.jockey}
+
+<br>
+
+斤量：${horse.weight}kg
+
+<br><br>
+
+単勝オッズ：${horse.odds || "-"}
+
+<div class="memo">
+
+<b>メモ</b>
+
+<br>
+
+${horse.memo || "なし"}
+
+</div>
+
+<br>
+
+<button
+class="edit-btn"
+onclick="editHorse(${index})">
+✏️編集
+</button>
+
+<button
+class="delete-btn"
+onclick="deleteHorse(${index})">
+🗑削除
+</button>
+
+</div>
+
+`;
+
+});
+
+document.getElementById(
+"horseList"
+).innerHTML = html;
+
+updateSummary();
+
+}
+
+function updateSummary(){
+
+let bestPoint = -1;
+
+let mainHorse =
+"まだ登録されていません";
+
+const marks = [];
+
+horses.forEach(horse=>{
+
+const totalPoint =
+getRankPoint(horse.rank)
++
+getValuePoint(horse.value || "D");
+
+if(totalPoint > bestPoint){
+
+bestPoint =
+totalPoint;
+
+mainHorse =
+`${horse.name}
+（総合点:${totalPoint}）`;
+
+}
+
+if(
+horse.rank==="◎" ||
+horse.rank==="○" ||
+horse.rank==="▲" ||
+horse.rank==="△"
+){
+
+marks.push(
+`${horse.rank} ${horse.name}`
+);
+
+}
+
+});
+
+document.getElementById(
+"mainHorse"
+).innerHTML =
+mainHorse;
+
+document.getElementById(
+"markList"
+).innerHTML =
+marks.length
+? marks.join("<br>")
+: "まだ登録されていません";
+
+}
+
+</script>
+
+</body>
+</html>    
