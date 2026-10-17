@@ -667,6 +667,26 @@ return 1;
 
 }
 
+function getTrackPoint(track){
+
+switch(track){
+
+case "◎":
+return 2;
+
+case "○":
+return 1;
+
+case "△":
+return 0;
+
+default:
+return -1;
+
+}
+
+}
+
 function renderList(){
 
 let html = "";
