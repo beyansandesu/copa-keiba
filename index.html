@@ -700,6 +700,39 @@ return -1;
 
 }
 
+function getRankFromOdds(odds){
+
+odds = Number(odds);
+
+if(odds <= 3) return "◎";
+
+if(odds <= 7) return "○";
+
+if(odds <= 15) return "▲";
+
+if(odds <= 30) return "△";
+
+return "×";
+
+}    
+
+function getValueFromOdds(odds){
+
+odds = Number(odds);
+
+if(odds <= 5) return "D";
+
+if(odds <= 10) return "C";
+
+if(odds <= 20) return "B";
+
+if(odds <= 40) return "A";
+
+return "S";
+
+}
+``    
+
 function renderList(){
 
 let html = "";
