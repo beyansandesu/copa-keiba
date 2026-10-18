@@ -315,9 +315,22 @@ name: cols[2].trim(),
 jockey: cols[3].trim(),
 weight: cols[4].trim(),
 
-rank:"×",
-value:"D",
-odds:"",
+rank: cols[5]
+? cols[5].trim()
+: "×",
+
+value: cols[6]
+? cols[6].trim()
+: "D",
+
+track: cols[7]
+? cols[7].trim()
+: "△",
+
+odds: cols[8]
+? cols[8].trim()
+: "",
+
 memo:""
 
 });
