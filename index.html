@@ -305,22 +305,10 @@ lines.forEach(line=>{
 const cols =
 line.split(",");
 
-if(cols.length < 5) return;
-
-console.log(cols);
-
-horses.push({
-
-frame: cols[0].trim(),
-no: cols[1].trim(),
-name: cols[2].trim(),
-jockey: cols[3].trim(),
-weight: cols[4].trim(),
+if(cols.length < 6) return;
 
 const odds =
-cols[5]
-? cols[5].trim()
-: "";
+cols[5].trim();
 
 horses.push({
 
