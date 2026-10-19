@@ -315,21 +315,28 @@ name: cols[2].trim(),
 jockey: cols[3].trim(),
 weight: cols[4].trim(),
 
-rank: cols[5]
+const odds =
+cols[5]
 ? cols[5].trim()
-: "×",
+: "";
 
-value: cols[6]
-? cols[6].trim()
-: "D",
+horses.push({
 
-track: cols[7]
-? cols[7].trim()
-: "△",
+frame: cols[0].trim(),
+no: cols[1].trim(),
+name: cols[2].trim(),
+jockey: cols[3].trim(),
+weight: cols[4].trim(),
 
-odds: cols[8]
-? cols[8].trim()
-: "",
+rank:
+getRankFromOdds(odds),
+
+value:
+getValueFromOdds(odds),
+
+track:"△",
+
+odds:odds,
 
 memo:""
 
