@@ -875,6 +875,24 @@ marks.push(
 
 });
 
+ranking.sort(
+(a,b)=>b.point-a.point
+);
+
+let rankingHtml = "";
+
+ranking.forEach((horse,index)=>{
+
+rankingHtml +=
+
+`${index + 1}位
+${horse.name}
+（${horse.point}点）
+
+<br>`;
+
+});
+    
 document.getElementById(
 "mainHorse"
 ).innerHTML =
