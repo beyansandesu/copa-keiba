@@ -496,6 +496,14 @@ horse.memo || ""
 );
 if(memo===null) return;
 
+const track =
+prompt(
+"馬場適性",
+horse.track || "△"
+);
+
+if(track===null) return;    
+
 horses[index] = {
 
 frame,
