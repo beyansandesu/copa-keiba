@@ -895,6 +895,27 @@ return b.point - a.point;
 return a.odds - b.odds;
 
 });
+
+const markSymbol =
+
+["◎","○","▲","△"];
+
+marks.length = 0;
+
+ranking.forEach((horse,index)=>{
+
+if(index < 4){
+
+marks.push(
+
+`${markSymbol[index]}
+${horse.name}`
+
+);
+
+}
+
+});    
 let rankingHtml = "";
 
 ranking.forEach((horse,index)=>{
