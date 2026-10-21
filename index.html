@@ -897,10 +897,17 @@ marks.push(
 
 });
 
-ranking.sort(
-(a,b)=>b.point-a.point
-);
+ranking.sort((a,b)=>{
 
+if(b.point !== a.point){
+
+return b.point - a.point;
+
+}
+
+return a.odds - b.odds;
+
+});
 let rankingHtml = "";
 
 ranking.forEach((horse,index)=>{
