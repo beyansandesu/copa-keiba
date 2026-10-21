@@ -863,10 +863,13 @@ ranking.push({
 
 name: horse.name,
 
-point: totalPoint
+point: totalPoint,
+
+odds: Number(
+horse.odds || 999
+)
 
 });
-
 
 if(totalPoint > bestPoint){
 
