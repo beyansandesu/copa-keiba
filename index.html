@@ -510,6 +510,14 @@ horse.odds
 );
 if(odds===null) return;
 
+const finish =
+prompt(
+"着順",
+horse.finish || ""
+);
+
+if(finish===null) return;
+
 const memo =
 prompt(
 "メモ",
