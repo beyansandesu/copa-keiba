@@ -533,7 +533,7 @@ horse.track || "△"
 
 if(track===null) return;    
 
-horses[index] = {
+horses.push({
 
 frame,
 no,
@@ -544,9 +544,10 @@ rank,
 value,
 track,
 odds,
+finish,
 memo
 
-};
+});
 
 saveData();
 renderList();
