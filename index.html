@@ -437,7 +437,6 @@ function editHistory(index){
     const newTrackBias = prompt("馬場傾向", race.trackBias);
     if(newTrackBias === null) return;
 
-    // 上位馬（top5）の各データも順に修正できるようにする
     const updatedTop5 = [];
     if(race.top5 && race.top5.length > 0){
         for(let i = 0; i < race.top5.length; i++){
