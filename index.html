@@ -194,6 +194,12 @@ select{
 
 <script>
 let horses = JSON.parse(localStorage.getItem("horses")) || [];
+let raceHistory =
+JSON.parse(
+localStorage.getItem(
+"raceHistory"
+)
+) || [];
 
 renderList();
 
