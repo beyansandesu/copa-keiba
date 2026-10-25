@@ -406,6 +406,62 @@ function importJSON(){
     reader.readAsText(file);
 }
 
+function saveRaceResult(){
+
+const top5 =
+
+horses
+.filter(h=>{
+
+const finish =
+Number(h.finish);
+
+return (
+finish >= 1 &&
+finish <= 5
+);
+
+})
+.sort(
+(a,b)=>
+Number(a.finish)
+-
+Number(b.finish)
+);
+
+raceHistory.push({
+
+date:
+new Date()
+.toLocaleDateString(),
+
+raceName:
+document.getElementById(
+"raceName"
+).value,
+
+trackCondition:
+document.getElementById(
+"trackCondition"
+).value,
+
+trackBias:
+document.getElementById(
+"trackBias"
+).value,
+
+top5
+
+});
+
+saveRaceHistory();
+
+alert(
+"結果保存完了"
+);
+
+}
+    
 function getRankPoint(rank){
     switch(rank){
         case "◎": return 5;
