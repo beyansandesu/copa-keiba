@@ -529,13 +529,36 @@ function getValuePoint(value){
     }
 }
 
+// 馬場状態・馬場傾向を加味した馬場適性ポイント計算ロジック
 function getTrackPoint(track){
+    const condition = document.getElementById("trackCondition").value;
+    const bias = document.getElementById("trackBias").value;
+
+    let basePoint = 0;
     switch(track){
-        case "◎": return 2;
-        case "○": return 1;
-        case "△": return 0;
-        default: return -1;
+        case "◎": basePoint = 2; break;
+        case "○": basePoint = 1; break;
+        case "△": basePoint = 0; break;
+        default: basePoint = -1; break;
     }
+
+    // 馬場状態による補正
+    if(condition === "重" || condition === "不良"){
+        if(track === "◎") basePoint += 2;
+        else if(track === "○") basePoint += 1;
+        else if(track === "×") basePoint -= 1;
+    } else if(condition === "稍重"){
+        if(track === "◎") basePoint += 1;
+    }
+
+    // 馬場傾向（フラット以外）による適性重視補正
+    if(bias !== "フラット"){
+        if(track === "◎" || track === "○"){
+            basePoint += 1;
+        }
+    }
+
+    return basePoint;
 }
 
 function getRankFromOdds(odds){
