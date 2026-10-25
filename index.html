@@ -183,7 +183,8 @@ select{
     
 <div class="card">
 <h3>📥 出走表一括取込</h3>
-<textarea id="bulkInput" placeholder="1,1,サヴマ,横山武史,57,3.5"></textarea>
+<textarea id="bulkInput" placeholder="枠番,馬番,馬名,騎手,斤量,オッズ,馬場適性(任意)
+例：1,1,サヴマ,横山武史,57,3.5,◎"></textarea>
 <button class="add-btn" onclick="importBulk()">📥 一括取込</button>
 </div>
 
@@ -258,6 +259,8 @@ function importBulk(){
         const jockey = cols[3].trim();
         const weight = cols[4].trim();
         const odds = cols[5].trim();
+        // 7項目目があればそれを使用し、無ければデフォルト「△」にする
+        const track = (cols.length >= 7 && cols[6].trim()) ? cols[6].trim() : "△";
 
         horses.push({
             frame: frame,
@@ -267,7 +270,7 @@ function importBulk(){
             weight: weight,
             rank: getRankFromOdds(odds),
             value: getValueFromOdds(odds),
-            track: "△",
+            track: track,
             odds: odds,
             finish: "",
             memo: ""
