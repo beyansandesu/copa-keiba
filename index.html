@@ -432,7 +432,6 @@ function importJSON(){
         document.getElementById("trackCondition").value = data.trackCondition || "良";
         document.getElementById("trackBias").value = data.trackBias || "フラット";
         
-        // 読み込んだレース情報もローカルストレージに保存
         localStorage.setItem("raceName", document.getElementById("raceName").value);
         localStorage.setItem("trackCondition", document.getElementById("trackCondition").value);
         localStorage.setItem("trackBias", document.getElementById("trackBias").value);
@@ -569,7 +568,6 @@ function renderList(){
         <br><br>
         <div class="rank">評価：${horse.rank}</div>
         <div class="value">期待値：${horse.value}<br>
-        馬場状態：${document.getElementById("trackCondition").value} / 馬場傾向：${document.getElementById("trackBias").value}<br>
         馬場適性：${horse.track || "△"}<br>
         総合点：${totalPoint}</div>
         <br>
@@ -592,7 +590,6 @@ function renderList(){
 }
 
 function updateSummary(){
-    let bestPoint = -1;
     let mainHorse = "まだ登録されていません";
     const marks = [];
     const ranking = [];
