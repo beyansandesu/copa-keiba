@@ -437,12 +437,32 @@ function editHistory(index){
     const newTrackBias = prompt("馬場傾向", race.trackBias);
     if(newTrackBias === null) return;
 
+    // 上位馬（top5）の各データも順に修正できるようにする
+    const updatedTop5 = [];
+    if(race.top5 && race.top5.length > 0){
+        for(let i = 0; i < race.top5.length; i++){
+            let h = race.top5[i];
+            let editThis = confirm(`${i+1}番目の馬「${h.name}（${h.finish}着）」を編集しますか？`);
+            if(editThis){
+                let newFinish = prompt("着順", h.finish);
+                if(newFinish === null) newFinish = h.finish;
+                let newName = prompt("馬名", h.name);
+                if(newName === null) newName = h.name;
+                updatedTop5.push({ finish: newFinish, name: newName });
+            } else {
+                updatedTop5.push(h);
+            }
+        }
+    }
+
     raceHistory[index].raceName = newRaceName;
     raceHistory[index].trackCondition = newTrackCondition;
     raceHistory[index].trackBias = newTrackBias;
+    raceHistory[index].top5 = updatedTop5;
 
     saveRaceHistory();
     renderHistory();
+    alert("保存済みレースを更新しました");
 }
 
 function deleteHistory(index){
