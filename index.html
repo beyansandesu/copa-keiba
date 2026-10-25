@@ -207,6 +207,17 @@ function saveData(){
     localStorage.setItem("horses", JSON.stringify(horses));
 }
 
+function saveRaceHistory(){
+
+localStorage.setItem(
+"raceHistory",
+JSON.stringify(
+raceHistory
+)
+);
+
+}
+    
 function importBulk(){
     const text = document.getElementById("bulkInput").value.trim();
     if(!text){
