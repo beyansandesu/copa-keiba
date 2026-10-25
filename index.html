@@ -89,6 +89,14 @@ button{
     margin-top:10px;
 }
 
+.history-item{
+    border:1px solid #ddd;
+    border-radius:8px;
+    padding:12px;
+    margin-top:10px;
+    background:#fafafa;
+}
+
 .rank{
     font-size:20px;
     font-weight:bold;
@@ -142,7 +150,6 @@ select{
 <option value="外前有利">外前有利</option>
 <option value="内差有利">内差有利</option>
 <option value="外差有利">外差有利</option>
-
 </select>
 </div>
 
@@ -162,14 +169,8 @@ select{
 </div>    
 
 <div class="card">
-<h2>
-🏁 保存済みレース
-</h2>
-
-<div id="historyList">
-まだ保存されていません
-</div>
-
+<h2>🏁 保存済みレース</h2>
+<div id="historyList">まだ保存されていません</div>
 </div>    
     
 <div class="card">
@@ -207,12 +208,7 @@ select{
 
 <script>
 let horses = JSON.parse(localStorage.getItem("horses")) || [];
-let raceHistory =
-JSON.parse(
-localStorage.getItem(
-"raceHistory"
-)
-) || [];
+let raceHistory = JSON.parse(localStorage.getItem("raceHistory")) || [];
 
 renderList();
 renderHistory();
@@ -222,14 +218,7 @@ function saveData(){
 }
 
 function saveRaceHistory(){
-
-localStorage.setItem(
-"raceHistory",
-JSON.stringify(
-raceHistory
-)
-);
-
+    localStorage.setItem("raceHistory", JSON.stringify(raceHistory));
 }
     
 function importBulk(){
@@ -420,61 +409,48 @@ function importJSON(){
 }
 
 function saveRaceResult(){
+    const top5 = horses.filter(h=>{
+        const finish = Number(h.finish);
+        return (finish >= 1 && finish <= 5);
+    }).sort((a,b)=> Number(a.finish) - Number(b.finish));
 
-const top5 =
+    raceHistory.push({
+        date: new Date().toLocaleDateString(),
+        raceName: document.getElementById("raceName").value,
+        trackCondition: document.getElementById("trackCondition").value,
+        trackBias: document.getElementById("trackBias").value,
+        top5
+    });
 
-horses
-.filter(h=>{
+    saveRaceHistory();
+    renderHistory();
+    alert("結果保存完了");
+}
 
-const finish =
-Number(h.finish);
+function editHistory(index){
+    const race = raceHistory[index];
 
-return (
-finish >= 1 &&
-finish <= 5
-);
+    const newRaceName = prompt("レース名", race.raceName);
+    if(newRaceName === null) return;
+    const newTrackCondition = prompt("馬場状態（良/稍重/重/不良）", race.trackCondition);
+    if(newTrackCondition === null) return;
+    const newTrackBias = prompt("馬場傾向", race.trackBias);
+    if(newTrackBias === null) return;
 
-})
-.sort(
-(a,b)=>
-Number(a.finish)
--
-Number(b.finish)
-);
+    raceHistory[index].raceName = newRaceName;
+    raceHistory[index].trackCondition = newTrackCondition;
+    raceHistory[index].trackBias = newTrackBias;
 
-raceHistory.push({
+    saveRaceHistory();
+    renderHistory();
+}
 
-date:
-new Date()
-.toLocaleDateString(),
-
-raceName:
-document.getElementById(
-"raceName"
-).value,
-
-trackCondition:
-document.getElementById(
-"trackCondition"
-).value,
-
-trackBias:
-document.getElementById(
-"trackBias"
-).value,
-
-top5
-
-});
-
-saveRaceHistory();
-
-renderHistory();
-
-alert(
-"結果保存完了"
-);
-
+function deleteHistory(index){
+    if(confirm("この保存済みレースを削除しますか？")){
+        raceHistory.splice(index, 1);
+        saveRaceHistory();
+        renderHistory();
+    }
 }
     
 function getRankPoint(rank){
@@ -603,56 +579,29 @@ function updateSummary(){
 }
 
 function renderHistory(){
+    let html = "";
 
-let html = "";
+    raceHistory.forEach((race, index)=>{
+        html += `<div class="history-item">`;
+        html += `<b>📅 ${race.date || ""} ｜ ${race.raceName}</b><br>`;
+        html += `馬場：${race.trackCondition} ／ ${race.trackBias}<br><br>`;
 
-raceHistory.forEach(race=>{
+        if(race.top5 && race.top5.length > 0){
+            race.top5.forEach(horse=>{
+                html += `${horse.finish}着：${horse.name}<br>`;
+            });
+        } else {
+            html += `上位馬データなし<br>`;
+        }
 
-html += `
+        html += `<br>`;
+        html += `<button class="edit-btn" onclick="editHistory(${index})">✏️編集</button> `;
+        html += `<button class="delete-btn" onclick="deleteHistory(${index})">🗑削除</button>`;
+        html += `</div>`;
+    });
 
-<b>
-${race.raceName}
-</b>
-
-<br>
-
-馬場：
-${race.trackCondition}
-
-／
-
-${race.trackBias}
-
-<br>
-
-`;
-
-race.top5.forEach(horse=>{
-
-html +=
-
-`
-${horse.finish}着
-${horse.name}
-
-<br>
-`;
-
-});
-
-html +=
-"<hr>";
-
-});
-
-document.getElementById(
-"historyList"
-).innerHTML =
-html ||
-"まだ保存されていません";
-
+    document.getElementById("historyList").innerHTML = html || "まだ保存されていません";
 }
-    
 </script>
 
 </body>
