@@ -70,6 +70,11 @@ button{
     color:white;
 }
 
+.toggle-btn{
+    background:#607d8b;
+    color:white;
+}
+
 .edit-btn{
     width:auto;
     background:#4CAF50;
@@ -170,7 +175,10 @@ select{
 
 <div class="card">
 <h2>🏁 保存済みレース</h2>
-<div id="historyList">まだ保存されていません</div>
+<button class="toggle-btn" onclick="toggleHistory()">📂 保存済みレースを表示/非表示</button>
+<div id="historyContainer" style="display:none; margin-top:10px;">
+    <div id="historyList">まだ保存されていません</div>
+</div>
 </div>    
     
 <div class="card">
@@ -219,6 +227,15 @@ function saveData(){
 
 function saveRaceHistory(){
     localStorage.setItem("raceHistory", JSON.stringify(raceHistory));
+}
+
+function toggleHistory(){
+    const container = document.getElementById("historyContainer");
+    if(container.style.display === "none"){
+        container.style.display = "block";
+    } else {
+        container.style.display = "none";
+    }
 }
     
 function importBulk(){
