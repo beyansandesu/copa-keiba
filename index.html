@@ -597,6 +597,58 @@ function updateSummary(){
     document.getElementById("markList").innerHTML = marks.length ? marks.join("<br>") : "まだ登録されていません";
     document.getElementById("rankingList").innerHTML = ranking.length ? rankingHtml : "まだ登録されていません";   
 }
+
+function renderHistory(){
+
+let html = "";
+
+raceHistory.forEach(race=>{
+
+html += `
+
+<b>
+${race.raceName}
+</b>
+
+<br>
+
+馬場：
+${race.trackCondition}
+
+／
+
+${race.trackBias}
+
+<br>
+
+`;
+
+race.top5.forEach(horse=>{
+
+html +=
+
+`
+${horse.finish}着
+${horse.name}
+
+<br>
+`;
+
+});
+
+html +=
+"<hr>";
+
+});
+
+document.getElementById(
+"historyList"
+).innerHTML =
+html ||
+"まだ保存されていません";
+
+}
+    
 </script>
 
 </body>
