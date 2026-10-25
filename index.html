@@ -139,9 +139,9 @@ select{
 
 <div class="card">
 <h2>レース情報</h2>
-<input id="raceName" placeholder="例：札幌11R">
+<input id="raceName" placeholder="例：札幌11R" oninput="saveRaceInfo()">
 <label>馬場状態</label>
-<select id="trackCondition">
+<select id="trackCondition" onchange="saveRaceInfo()">
 <option value="良">良</option>
 <option value="稍重">稍重</option>
 <option value="重">重</option>
@@ -149,7 +149,7 @@ select{
 </select>
 
 <label>馬場傾向</label>
-<select id="trackBias">
+<select id="trackBias" onchange="saveRaceInfo()">
 <option value="フラット">フラット</option>
 <option value="内前有利">内前有利</option>
 <option value="外前有利">外前有利</option>
@@ -219,6 +219,11 @@ select{
 let horses = JSON.parse(localStorage.getItem("horses")) || [];
 let raceHistory = JSON.parse(localStorage.getItem("raceHistory")) || [];
 
+// レース情報の復元
+document.getElementById("raceName").value = localStorage.getItem("raceName") || "";
+document.getElementById("trackCondition").value = localStorage.getItem("trackCondition") || "良";
+document.getElementById("trackBias").value = localStorage.getItem("trackBias") || "フラット";
+
 renderList();
 renderHistory();
 
@@ -228,6 +233,14 @@ function saveData(){
 
 function saveRaceHistory(){
     localStorage.setItem("raceHistory", JSON.stringify(raceHistory));
+}
+
+// レース情報（レース名・馬場状態・馬場傾向）が変更されたときの自動保存＆再描画
+function saveRaceInfo(){
+    localStorage.setItem("raceName", document.getElementById("raceName").value);
+    localStorage.setItem("trackCondition", document.getElementById("trackCondition").value);
+    localStorage.setItem("trackBias", document.getElementById("trackBias").value);
+    renderList();
 }
 
 function toggleHistory(){
@@ -259,7 +272,6 @@ function importBulk(){
         const jockey = cols[3].trim();
         const weight = cols[4].trim();
         const odds = cols[5].trim();
-        // 7項目目があればそれを使用し、無ければデフォルト「△」にする
         const track = (cols.length >= 7 && cols[6].trim()) ? cols[6].trim() : "△";
 
         horses.push({
@@ -419,6 +431,12 @@ function importJSON(){
         document.getElementById("raceName").value = data.raceName || "";
         document.getElementById("trackCondition").value = data.trackCondition || "良";
         document.getElementById("trackBias").value = data.trackBias || "フラット";
+        
+        // 読み込んだレース情報もローカルストレージに保存
+        localStorage.setItem("raceName", document.getElementById("raceName").value);
+        localStorage.setItem("trackCondition", document.getElementById("trackCondition").value);
+        localStorage.setItem("trackBias", document.getElementById("trackBias").value);
+
         horses = data.horses || [];
 
         saveData();
@@ -551,6 +569,7 @@ function renderList(){
         <br><br>
         <div class="rank">評価：${horse.rank}</div>
         <div class="value">期待値：${horse.value}<br>
+        馬場状態：${document.getElementById("trackCondition").value} / 馬場傾向：${document.getElementById("trackBias").value}<br>
         馬場適性：${horse.track || "△"}<br>
         総合点：${totalPoint}</div>
         <br>
