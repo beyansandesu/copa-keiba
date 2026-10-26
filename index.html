@@ -144,7 +144,7 @@ select{
 
 <div class="card">
 <h2>レース情報</h2>
-<input id="raceName" placeholder="例：札幌11R" oninput="saveRaceInfo()">
+<input id="raceName" placeholder="例：大井11R" oninput="saveRaceInfo()">
 <label>馬場状態</label>
 <select id="trackCondition" onchange="saveRaceInfo()">
 <option value="良">良</option>
@@ -187,7 +187,7 @@ select{
 </div>  
 
 <div class="card">
-<h2>📊 成績ダッシュボード</h2>
+<h2>📊 地方競馬 成績・収支ダッシュボード</h2>
 <div id="dashboard">まだデータがありません</div>
 </div>
     
@@ -214,7 +214,7 @@ select{
 <button class="add-btn" onclick="addHorse()">馬を追加</button>
 <button class="clear-btn" onclick="clearAllHorses()">🗑️ 登録馬をすべてクリア</button>
 <button class="save-btn" onclick="exportJSON()">💾 JSON保存</button>
-<button class="save-btn" onclick="saveRaceResult()">🏁 レース結果保存</button>
+<button class="save-btn" onclick="saveRaceResult()">🏁 レース結果・収支保存</button>
 <input type="file" id="jsonFile" accept=".json">
 <button class="load-btn" onclick="importJSON()">📂 JSON読込</button>
 </div>
@@ -247,7 +247,6 @@ function saveRaceHistory(){
     localStorage.setItem("raceHistory", JSON.stringify(raceHistory));
 }
 
-// レース情報（レース名・馬場状態・馬場傾向）が変更されたときの自動保存＆再描画
 function saveRaceInfo(){
     localStorage.setItem("raceName", document.getElementById("raceName").value);
     localStorage.setItem("trackCondition", document.getElementById("trackCondition").value);
@@ -358,7 +357,6 @@ function addHorse(){
     document.getElementById("horseMemo").value="";
 }
 
-// 登録馬をすべてクリアする関数
 function clearAllHorses(){
     if(horses.length === 0){
         alert("登録されている馬がいません");
@@ -472,7 +470,16 @@ function importJSON(){
     reader.readAsText(file);
 }
 
+// レース結果保存時に「購入金額」と「払戻金額」を入力できるように拡張
 function saveRaceResult(){
+    const inputBet = prompt("このレースの馬券購入金額（投資額）を入力してください（円）", "1000");
+    if(inputBet === null) return;
+    const inputPayout = prompt("このレースの払戻金額を入力してください（的中しなかった場合は0円）", "0");
+    if(inputPayout === null) return;
+
+    const betAmount = Number(inputBet) || 0;
+    const payoutAmount = Number(inputPayout) || 0;
+
     const top5 = horses.filter(h=>{
         const finish = Number(h.finish);
         return (finish >= 1 && finish <= 5);
@@ -502,13 +509,15 @@ function saveRaceResult(){
         trackBias: document.getElementById("trackBias").value,
         favorite: ranking.length > 0 ? ranking[0].name : "",
         favoriteFinish: top5.find(h => h.name === (ranking.length > 0 ? ranking[0].name : ""))?.finish || "着外",
+        bet: betAmount,
+        payout: payoutAmount,
         top5
     });
 
     saveRaceHistory();
     renderHistory();
     renderDashboard();
-    alert("結果保存完了");
+    alert("結果と収支の保存が完了しました！");
 }
 
 function editHistory(index){
@@ -520,6 +529,10 @@ function editHistory(index){
     if(newTrackCondition === null) return;
     const newTrackBias = prompt("馬場傾向", race.trackBias);
     if(newTrackBias === null) return;
+    const newBet = prompt("購入金額（円）", race.bet || 0);
+    if(newBet === null) return;
+    const newPayout = prompt("払戻金額（円）", race.payout || 0);
+    if(newPayout === null) return;
 
     const updatedTop5 = [];
     if(race.top5 && race.top5.length > 0){
@@ -541,10 +554,13 @@ function editHistory(index){
     raceHistory[index].raceName = newRaceName;
     raceHistory[index].trackCondition = newTrackCondition;
     raceHistory[index].trackBias = newTrackBias;
+    raceHistory[index].bet = Number(newBet) || 0;
+    raceHistory[index].payout = Number(newPayout) || 0;
     raceHistory[index].top5 = updatedTop5;
 
     saveRaceHistory();
     renderHistory();
+    renderDashboard();
     alert("保存済みレースを更新しました");
 }
 
@@ -553,6 +569,7 @@ function deleteHistory(index){
         raceHistory.splice(index, 1);
         saveRaceHistory();
         renderHistory();
+        renderDashboard();
     }
 }
     
@@ -704,9 +721,14 @@ function renderHistory(){
     let html = "";
 
     raceHistory.forEach((race, index)=>{
+        const bet = race.bet || 0;
+        const payout = race.payout || 0;
+        const balance = payout - bet;
+
         html += `<div class="history-item">`;
         html += `<b>📅 ${race.date || ""} ｜ ${race.raceName}</b><br>`;
-        html += `馬場：${race.trackCondition} ／ ${race.trackBias}<br><br>`;
+        html += `馬場：${race.trackCondition} ／ ${race.trackBias}<br>`;
+        html += `投資：${bet.toLocaleString()}円 ／ 払戻：${payout.toLocaleString()}円 （収支: ${balance >= 0 ? '+' : ''}${balance.toLocaleString()}円）<br><br>`;
 
         if(race.top5 && race.top5.length > 0){
             race.top5.forEach(horse=>{
@@ -727,27 +749,44 @@ function renderHistory(){
 
 function renderDashboard(){
     let totalRaces = raceHistory.length;
+    let totalBet = 0;
+    let totalPayout = 0;
+    let hitRaces = 0; // 的中レース数（払戻が購入額より多い、または払戻が0より大きければ的中とみなす等、今回はシンプルに払戻が1円以上あったレースを的中とカウント、あるいは本命3着以内）
+    
     let first = 0;
     let second = 0;
     let third = 0;
 
     raceHistory.forEach(race=>{
-        race.top5.forEach(horse=>{
-            const finish = Number(horse.finish);
-            if(finish === 1) first++;
-            if(finish === 2) second++;
-            if(finish === 3) third++;
-        });
+        const bet = race.bet || 0;
+        const payout = race.payout || 0;
+        totalBet += bet;
+        totalPayout += payout;
+
+        // 払戻がある＝的中としてカウント
+        if(payout > 0){
+            hitRaces++;
+        }
+
+        const finish = Number(race.favoriteFinish);
+        if(finish === 1) first++;
+        else if(finish === 2) second++;
+        else if(finish === 3) third++;
     });
 
-    const placeRate = totalRaces > 0 ? (((first + second + third) / totalRaces) * 100).toFixed(1) : 0;
+    const totalBalance = totalPayout - totalBet;
+    const recoveryRate = totalBet > 0 ? ((totalPayout / totalBet) * 100).toFixed(1) : 0;
+    const hitRate = totalRaces > 0 ? ((hitRaces / totalRaces) * 100).toFixed(1) : 0;
 
     document.getElementById("dashboard").innerHTML = `
     総保存レース数：${totalRaces}レース<br><br>
-    1着記録：${first}<br>
-    2着記録：${second}<br>
-    3着記録：${third}<br><br>
-    3着内率：${placeRate}%
+    💰 総投資額：${totalBet.toLocaleString()}円<br>
+    🎯 総回収額：${totalPayout.toLocaleString()}円<br>
+    📈 トータル収支：<b>${totalBalance >= 0 ? '+' : ''}${totalBalance.toLocaleString()}円</b><br>
+    📊 回収率：<b>${recoveryRate}%</b><br>
+    🎯 的中率：<b>${hitRate}%</b>（的中レース数: ${hitRaces} / ${totalRaces}）<br><br>
+    【参考：本命馬の成績】<br>
+    本命1着：${first}回 ／ 2着：${second}回 ／ 3着：${third}回
     `;
 }
 </script>
