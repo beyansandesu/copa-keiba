@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>コパの競馬予想 Ver1.2</title>
+<title>コパの競馬予想 Ver1.3</title>
 
 <style>
 body{
@@ -168,6 +168,9 @@ select{
 
 <label>払戻金額（的中時）</label>
 <input type="number" id="payoutAmount" placeholder="例：0（ハズレは0）" oninput="saveRaceInfo()">
+
+<label>買い目・券種メモ</label>
+<input id="betMemo" placeholder="例：馬連 3-8 (1,000円)" oninput="saveRaceInfo()">
 </div>
 
 <div class="card">
@@ -243,6 +246,7 @@ document.getElementById("trackCondition").value = localStorage.getItem("trackCon
 document.getElementById("trackBias").value = localStorage.getItem("trackBias") || "フラット";
 document.getElementById("betAmount").value = localStorage.getItem("betAmount") || "";
 document.getElementById("payoutAmount").value = localStorage.getItem("payoutAmount") || "";
+document.getElementById("betMemo").value = localStorage.getItem("betMemo") || "";
 
 renderList();
 renderHistory();
@@ -262,6 +266,7 @@ function saveRaceInfo(){
     localStorage.setItem("trackBias", document.getElementById("trackBias").value);
     localStorage.setItem("betAmount", document.getElementById("betAmount").value);
     localStorage.setItem("payoutAmount", document.getElementById("payoutAmount").value);
+    localStorage.setItem("betMemo", document.getElementById("betMemo").value);
     renderList();
 }
 
@@ -481,10 +486,11 @@ function importJSON(){
     reader.readAsText(file);
 }
 
-// 画面上の入力欄から直接購入金額・払戻金額を取得して保存する方式に変更
+// 買い目メモも含めて保存する処理
 function saveRaceResult(){
     const betAmount = Number(document.getElementById("betAmount").value) || 0;
     const payoutAmount = Number(document.getElementById("payoutAmount").value) || 0;
+    const betMemo = document.getElementById("betMemo").value || "";
 
     const top5 = horses.filter(h=>{
         const finish = Number(h.finish);
@@ -517,13 +523,14 @@ function saveRaceResult(){
         favoriteFinish: top5.find(h => h.name === (ranking.length > 0 ? ranking[0].name : ""))?.finish || "着外",
         bet: betAmount,
         payout: payoutAmount,
+        betMemo: betMemo,
         top5
     });
 
     saveRaceHistory();
     renderHistory();
     renderDashboard();
-    alert("結果と収支の保存が完了しました！");
+    alert("結果と買い目・収支の保存が完了しました！");
 }
 
 function editHistory(index){
@@ -539,6 +546,8 @@ function editHistory(index){
     if(newBet === null) return;
     const newPayout = prompt("払戻金額（円）", race.payout || 0);
     if(newPayout === null) return;
+    const newBetMemo = prompt("買い目・券種メモ", race.betMemo || "");
+    if(newBetMemo === null) return;
 
     const updatedTop5 = [];
     if(race.top5 && race.top5.length > 0){
@@ -562,11 +571,11 @@ function editHistory(index){
     raceHistory[index].trackBias = newTrackBias;
     raceHistory[index].bet = Number(newBet) || 0;
     raceHistory[index].payout = Number(newPayout) || 0;
+    raceHistory[index].betMemo = newBetMemo;
     raceHistory[index].top5 = updatedTop5;
 
     saveRaceHistory();
     renderHistory();
-    renderDashboard();
     alert("保存済みレースを更新しました");
 }
 
@@ -709,31 +718,16 @@ function updateSummary(){
 
     ranking.forEach((horse,index)=>{
         if(index < 4){
-            marks.push(`${markSymbol[index]} ${horse.name}`);
+            marks.push(`${markSymbol[index]}${horse.name}`);
         }
     });   
 
     let rankingHtml = "";
     ranking.forEach((horse,index)=>{
-        rankingHtml += `${index + 1}位 ${horse.name}（${horse.point}点）<br>`;
-    });
-   
-    document.getElementById("mainHorse").innerHTML = mainHorse;
-    document.getElementById("markList").innerHTML = marks.length ? marks.join("<br>") : "まだ登録されていません";
-    document.getElementById("rankingList").innerHTML = ranking.length ? rankingHtml : "まだ登録されていません";   
-}
-
-function renderHistory(){
-    let html = "";
-
-    raceHistory.forEach((race, index)=>{
-        const bet = race.bet || 0;
-        const payout = race.payout || 0;
-        const balance = payout - bet;
+        rankingHtml += `${index + 1}位 ${horse.name}（${horse.point}点）<br>`; });  document.getElementById("mainHorse").innerHTML = mainHorse; document.getElementById("markList").innerHTML = marks.length ? marks.join("<br>") : "まだ登録されていません"; document.getElementById("rankingList").innerHTML = ranking.length ? rankingHtml : "まだ登録されていません"; }  function renderHistory(){ let html = "";  raceHistory.forEach((race, index)=>{ const bet = race.bet \vert{}\vert{} 0; const payout = race.payout \vert{}\vert{} 0; const balance = payout - bet; const betMemo = race.betMemo ? `買い目: ${race.betMemo}` : "";
 
         html += `<div class="history-item">`;
-        html += `<b>📅 ${race.date || ""} ｜ ${race.raceName}</b><br>`;
-        html += `馬場：${race.trackCondition} ／ ${race.trackBias}<br>`;
+        html += `<b>📅 ${race.date || ""} ｜ ${race.raceName}</b><br>`; html += `馬場：${race.trackCondition} ／ ${race.trackBias}<br>`; if(betMemo) html += `${betMemo}<br>`;
         html += `投資：${bet.toLocaleString()}円 ／ 払戻：${payout.toLocaleString()}円 （収支: ${balance >= 0 ? '+' : ''}${balance.toLocaleString()}円）<br><br>`;
 
         if(race.top5 && race.top5.length > 0){
@@ -750,7 +744,7 @@ function renderHistory(){
         html += `</div>`;
     });
 
-    document.getElementById("historyList").innerHTML = html || "./ まだ保存されていません";
+    document.getElementById("historyList").innerHTML = html || "まだ保存されていません";
 }
 
 function renderDashboard(){
@@ -789,12 +783,4 @@ function renderDashboard(){
     🎯 総回収額：${totalPayout.toLocaleString()}円<br>
     📈 トータル収支：<b>${totalBalance >= 0 ? '+' : ''}${totalBalance.toLocaleString()}円</b><br>
     📊 回収率：<b>${recoveryRate}%</b><br>
-    🎯 的中率：<b>${hitRate}%</b>（的中レース数: ${hitRaces} / ${totalRaces}）<br><br>
-    【参考：本命馬の成績】<br>
-    本命1着：${first}回 ／ 2着：${second}回 ／ 3着：${third}回
-    `;
-}
-</script>
-
-</body>
-</html>
+    🎯 的中率：<b>${hitRate}\%</b>（的中レース数: ${hitR
