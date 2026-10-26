@@ -691,6 +691,83 @@ function renderHistory(){
 
     document.getElementById("historyList").innerHTML = html || "まだ保存されていません";
 }
+
+function renderDashboard(){
+
+let totalRaces =
+raceHistory.length;
+
+let first = 0;
+let second = 0;
+let third = 0;
+
+raceHistory.forEach(race=>{
+
+race.top5.forEach(horse=>{
+
+const finish =
+Number(horse.finish);
+
+if(finish === 1) first++;
+
+if(finish === 2) second++;
+
+if(finish === 3) third++;
+
+});
+
+});
+
+const placeRate =
+
+totalRaces > 0
+
+?
+
+(
+(
+(first + second + third)
+/
+totalRaces
+)
+*
+100
+).toFixed(1)
+
+: 0;
+
+document.getElementById(
+"dashboard"
+).innerHTML =
+
+`
+
+総保存レース数：
+${totalRaces}レース
+
+<br><br>
+
+1着記録：
+${first}
+
+<br>
+
+2着記録：
+${second}
+
+<br>
+
+3着記録：
+${third}
+
+<br><br>
+
+3着内率：
+${placeRate}%
+
+`;
+
+}    
 </script>
 
 </body>
