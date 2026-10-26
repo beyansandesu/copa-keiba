@@ -70,6 +70,11 @@ button{
     color:white;
 }
 
+.clear-btn{
+    background:#d32f2f;
+    color:white;
+}
+
 .toggle-btn{
     background:#607d8b;
     color:white;
@@ -207,6 +212,7 @@ select{
 <input id="horseFinish" placeholder="着順（1～18）">
 <textarea id="horseMemo" placeholder="メモ"></textarea>
 <button class="add-btn" onclick="addHorse()">馬を追加</button>
+<button class="clear-btn" onclick="clearAllHorses()">🗑️ 登録馬をすべてクリア</button>
 <button class="save-btn" onclick="exportJSON()">💾 JSON保存</button>
 <button class="save-btn" onclick="saveRaceResult()">🏁 レース結果保存</button>
 <input type="file" id="jsonFile" accept=".json">
@@ -350,6 +356,20 @@ function addHorse(){
     document.getElementById("horseOdds").value="";
     document.getElementById("horseFinish").value="";
     document.getElementById("horseMemo").value="";
+}
+
+// 登録馬をすべてクリアする関数
+function clearAllHorses(){
+    if(horses.length === 0){
+        alert("登録されている馬がいません");
+        return;
+    }
+    if(confirm("登録されている出走馬をすべて削除しますか？")){
+        horses = [];
+        saveData();
+        renderList();
+        alert("すべての出走馬を削除しました");
+    }
 }
 
 function editHorse(index){
@@ -707,27 +727,27 @@ function renderHistory(){
 
 function renderDashboard(){
     let totalRaces = raceHistory.length;
-    let hitCount = 0; // 3着以内（1〜3着）に入ったレース数
     let first = 0;
     let second = 0;
     let third = 0;
 
     raceHistory.forEach(race=>{
-        // 保存されている「本命馬の着順 (favoriteFinish)」をチェックする
-        const finish = Number(race.favoriteFinish);
-        if(finish === 1) { first++; hitCount++; }
-        else if(finish === 2) { second++; hitCount++; }
-        else if(finish === 3) { third++; hitCount++; }
+        race.top5.forEach(horse=>{
+            const finish = Number(horse.finish);
+            if(finish === 1) first++;
+            if(finish === 2) second++;
+            if(finish === 3) third++;
+        });
     });
 
-    const placeRate = totalRaces > 0 ? ((hitCount / totalRaces) * 100).toFixed(1) : 0;
+    const placeRate = totalRaces > 0 ? (((first + second + third) / totalRaces) * 100).toFixed(1) : 0;
 
     document.getElementById("dashboard").innerHTML = `
     総保存レース数：${totalRaces}レース<br><br>
-    本命1着：${first}<br>
-    本命2着：${second}<br>
-    本命3着：${third}<br><br>
-    3着内率（複勝率）：${placeRate}%
+    1着記録：${first}<br>
+    2着記録：${second}<br>
+    3着記録：${third}<br><br>
+    3着内率：${placeRate}%
     `;
 }
 </script>
