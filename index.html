@@ -471,10 +471,15 @@ function saveRaceResult(){
         top5
     });
 
-    saveRaceHistory();
-    renderHistory();
-    alert("結果保存完了");
-}
+saveRaceHistory();
+
+renderHistory();
+
+renderDashboard();
+
+alert(
+"結果保存完了"
+);
 
 function editHistory(index){
     const race = raceHistory[index];
