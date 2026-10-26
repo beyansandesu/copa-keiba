@@ -143,8 +143,9 @@ select{
 <div class="container">
 
 <div class="card">
-<h2>レース情報</h2>
+<h2>レース情報・収支入力</h2>
 <input id="raceName" placeholder="例：大井11R" oninput="saveRaceInfo()">
+
 <label>馬場状態</label>
 <select id="trackCondition" onchange="saveRaceInfo()">
 <option value="良">良</option>
@@ -161,6 +162,12 @@ select{
 <option value="内差有利">内差有利</option>
 <option value="外差有利">外差有利</option>
 </select>
+
+<label>馬券購入金額（投資額）</label>
+<input type="number" id="betAmount" placeholder="例：1000" oninput="saveRaceInfo()">
+
+<label>払戻金額（的中時）</label>
+<input type="number" id="payoutAmount" placeholder="例：0（ハズレは0）" oninput="saveRaceInfo()">
 </div>
 
 <div class="card">
@@ -234,6 +241,8 @@ let raceHistory = JSON.parse(localStorage.getItem("raceHistory")) || [];
 document.getElementById("raceName").value = localStorage.getItem("raceName") || "";
 document.getElementById("trackCondition").value = localStorage.getItem("trackCondition") || "良";
 document.getElementById("trackBias").value = localStorage.getItem("trackBias") || "フラット";
+document.getElementById("betAmount").value = localStorage.getItem("betAmount") || "";
+document.getElementById("payoutAmount").value = localStorage.getItem("payoutAmount") || "";
 
 renderList();
 renderHistory();
@@ -251,6 +260,8 @@ function saveRaceInfo(){
     localStorage.setItem("raceName", document.getElementById("raceName").value);
     localStorage.setItem("trackCondition", document.getElementById("trackCondition").value);
     localStorage.setItem("trackBias", document.getElementById("trackBias").value);
+    localStorage.setItem("betAmount", document.getElementById("betAmount").value);
+    localStorage.setItem("payoutAmount", document.getElementById("payoutAmount").value);
     renderList();
 }
 
@@ -470,15 +481,10 @@ function importJSON(){
     reader.readAsText(file);
 }
 
-// レース結果保存時に「購入金額」と「払戻金額」を入力できるように拡張
+// 画面上の入力欄から直接購入金額・払戻金額を取得して保存する方式に変更
 function saveRaceResult(){
-    const inputBet = prompt("このレースの馬券購入金額（投資額）を入力してください（円）", "1000");
-    if(inputBet === null) return;
-    const inputPayout = prompt("このレースの払戻金額を入力してください（的中しなかった場合は0円）", "0");
-    if(inputPayout === null) return;
-
-    const betAmount = Number(inputBet) || 0;
-    const payoutAmount = Number(inputPayout) || 0;
+    const betAmount = Number(document.getElementById("betAmount").value) || 0;
+    const payoutAmount = Number(document.getElementById("payoutAmount").value) || 0;
 
     const top5 = horses.filter(h=>{
         const finish = Number(h.finish);
@@ -744,14 +750,14 @@ function renderHistory(){
         html += `</div>`;
     });
 
-    document.getElementById("historyList").innerHTML = html || "まだ保存されていません";
+    document.getElementById("historyList").innerHTML = html || "./ まだ保存されていません";
 }
 
 function renderDashboard(){
     let totalRaces = raceHistory.length;
     let totalBet = 0;
     let totalPayout = 0;
-    let hitRaces = 0; // 的中レース数（払戻が購入額より多い、または払戻が0より大きければ的中とみなす等、今回はシンプルに払戻が1円以上あったレースを的中とカウント、あるいは本命3着以内）
+    let hitRaces = 0; 
     
     let first = 0;
     let second = 0;
@@ -763,7 +769,6 @@ function renderDashboard(){
         totalBet += bet;
         totalPayout += payout;
 
-        // 払戻がある＝的中としてカウント
         if(payout > 0){
             hitRaces++;
         }
