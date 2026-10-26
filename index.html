@@ -179,17 +179,11 @@ select{
 <div id="historyContainer" style="display:none; margin-top:10px;">
     <div id="historyList">まだ保存されていません</div>
 </div>
-</div> 
+</div>  
+
 <div class="card">
-
 <h2>📊 成績ダッシュボード</h2>
-
-<div id="dashboard">
-
-まだデータがありません
-
-</div>
-
+<div id="dashboard">まだデータがありません</div>
 </div>
     
 <div class="card">
@@ -271,10 +265,11 @@ function importBulk(){
         return;
     }
 
-    const lines = text.split("\n");
+    const lines = text.split(/\r\n|\n/);
     let count = 0;
 
     lines.forEach(line=>{
+        if(!line.trim()) return;
         const cols = line.split(",");
         if(cols.length < 6) return;
 
@@ -458,113 +453,42 @@ function importJSON(){
 }
 
 function saveRaceResult(){
+    const top5 = horses.filter(h=>{
+        const finish = Number(h.finish);
+        return (finish >= 1 && finish <= 5);
+    }).sort((a,b)=> Number(a.finish) - Number(b.finish));
 
-const top5 =
+    const ranking = [];
+    horses.forEach(horse=>{
+        const totalPoint = getRankPoint(horse.rank) + getValuePoint(horse.value || "D") + getTrackPoint(horse.track || "△");
+        ranking.push({
+            name: horse.name,
+            point: totalPoint,
+            odds: Number(horse.odds || 999)
+        });
+    });
 
-horses
-.filter(h=>{
+    ranking.sort((a,b)=>{
+        if(b.point !== a.point){
+            return b.point - a.point;
+        }
+        return a.odds - b.odds;
+    });
 
-const finish = Number(h.finish);
+    raceHistory.push({
+        date: new Date().toLocaleDateString(),
+        raceName: document.getElementById("raceName").value,
+        trackCondition: document.getElementById("trackCondition").value,
+        trackBias: document.getElementById("trackBias").value,
+        favorite: ranking.length > 0 ? ranking[0].name : "",
+        favoriteFinish: top5.find(h => h.name === (ranking.length > 0 ? ranking[0].name : ""))?.finish || "着外",
+        top5
+    });
 
-return (
-finish >= 1 &&
-finish <= 5
-);
-
-})
-.sort(
-(a,b)=>
-Number(a.finish)
--
-Number(b.finish)
-);
-
-const ranking = [];
-
-horses.forEach(horse=>{
-
-const totalPoint =
-
-getRankPoint(horse.rank)
-+
-getValuePoint(horse.value || "D")
-+
-getTrackPoint(horse.track || "△");
-
-ranking.push({
-
-name: horse.name,
-
-point: totalPoint,
-
-odds: Number(
-horse.odds || 999
-)
-
-});
-
-});
-
-ranking.sort((a,b)=>{
-
-if(b.point !== a.point){
-
-return b.point - a.point;
-
-}
-
-return a.odds - b.odds;
-
-});
-
-raceHistory.push({
-
-date:
-new Date().toLocaleDateString(),
-
-raceName:
-document.getElementById(
-"raceName"
-).value,
-
-trackCondition:
-document.getElementById(
-"trackCondition"
-).value,
-
-trackBias:
-document.getElementById(
-"trackBias"
-).value,
-
-favorite:
-ranking.length > 0
-? ranking[0].name
-: "",
-
-favoriteFinish:
-top5.find(
-h => h.name === (
-ranking.length > 0
-? ranking[0].name
-: ""
-)
-)?.finish || "着外",
-
-top5
-
-});
-
-saveRaceHistory();
-
-renderHistory();
-
-renderDashboard();
-
-alert(
-"結果保存完了"
-);
-
+    saveRaceHistory();
+    renderHistory();
+    renderDashboard();
+    alert("結果保存完了");
 }
 
 function editHistory(index){
@@ -632,7 +556,6 @@ function getValuePoint(value){
     }
 }
 
-// 馬場状態・馬場傾向を加味した馬場適性ポイント計算ロジック
 function getTrackPoint(track){
     const condition = document.getElementById("trackCondition").value;
     const bias = document.getElementById("trackBias").value;
@@ -645,7 +568,6 @@ function getTrackPoint(track){
         default: basePoint = -1; break;
     }
 
-    // 馬場状態による補正
     if(condition === "重" || condition === "不良"){
         if(track === "◎") basePoint += 2;
         else if(track === "○") basePoint += 1;
@@ -654,7 +576,6 @@ function getTrackPoint(track){
         if(track === "◎") basePoint += 1;
     }
 
-    // 馬場傾向（フラット以外）による適性重視補正
     if(bias !== "フラット"){
         if(track === "◎" || track === "○"){
             basePoint += 1;
@@ -785,81 +706,30 @@ function renderHistory(){
 }
 
 function renderDashboard(){
+    let totalRaces = raceHistory.length;
+    let first = 0;
+    let second = 0;
+    let third = 0;
 
-let totalRaces =
-raceHistory.length;
+    raceHistory.forEach(race=>{
+        race.top5.forEach(horse=>{
+            const finish = Number(horse.finish);
+            if(finish === 1) first++;
+            if(finish === 2) second++;
+            if(finish === 3) third++;
+        });
+    });
 
-let first = 0;
-let second = 0;
-let third = 0;
+    const placeRate = totalRaces > 0 ? (((first + second + third) / totalRaces) * 100).toFixed(1) : 0;
 
-raceHistory.forEach(race=>{
-
-race.top5.forEach(horse=>{
-
-const finish =
-Number(horse.finish);
-
-if(finish === 1) first++;
-
-if(finish === 2) second++;
-
-if(finish === 3) third++;
-
-});
-
-});
-
-const placeRate =
-
-totalRaces > 0
-
-?
-
-(
-(
-(first + second + third)
-/
-totalRaces
-)
-*
-100
-).toFixed(1)
-
-: 0;
-
-document.getElementById(
-"dashboard"
-).innerHTML =
-
-`
-
-総保存レース数：
-${totalRaces}レース
-
-<br><br>
-
-1着記録：
-${first}
-
-<br>
-
-2着記録：
-${second}
-
-<br>
-
-3着記録：
-${third}
-
-<br><br>
-
-3着内率：
-${placeRate}%
-
-`;
-
-}    
+    document.getElementById("dashboard").innerHTML = `
+    総保存レース数：${totalRaces}レース<br><br>
+    1着記録：${first}<br>
+    2着記録：${second}<br>
+    3着記録：${third}<br><br>
+    3着内率：${placeRate}%
+    `;
+}
 </script>
 
 </body>
