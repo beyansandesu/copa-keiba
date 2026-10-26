@@ -463,13 +463,39 @@ function saveRaceResult(){
         return (finish >= 1 && finish <= 5);
     }).sort((a,b)=> Number(a.finish) - Number(b.finish));
 
-    raceHistory.push({
-        date: new Date().toLocaleDateString(),
-        raceName: document.getElementById("raceName").value,
-        trackCondition: document.getElementById("trackCondition").value,
-        trackBias: document.getElementById("trackBias").value,
-        top5
-    });
+raceHistory.push({
+
+    date: new Date().toLocaleDateString(),
+
+    raceName: document.getElementById(
+        "raceName"
+    ).value,
+
+    trackCondition: document.getElementById(
+        "trackCondition"
+    ).value,
+
+    trackBias: document.getElementById(
+        "trackBias"
+    ).value,
+
+    favorite:
+    ranking.length > 0
+    ? ranking[0].name
+    : "",
+
+    favoriteFinish:
+    top5.find(
+        h => h.name === (
+            ranking.length > 0
+            ? ranking[0].name
+            : ""
+        )
+    )?.finish || "着外",
+
+    top5
+
+});
 
 saveRaceHistory();
 
