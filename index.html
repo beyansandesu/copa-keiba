@@ -458,10 +458,26 @@ function importJSON(){
 }
 
 function saveRaceResult(){
-    const top5 = horses.filter(h=>{
-        const finish = Number(h.finish);
-        return (finish >= 1 && finish <= 5);
-    }).sort((a,b)=> Number(a.finish) - Number(b.finish));
+
+const top5 =
+
+horses
+.filter(h=>{
+
+const finish = Number(h.finish);
+
+return (
+finish >= 1 &&
+finish <= 5
+);
+
+})
+.sort(
+(a,b)=>
+Number(a.finish)
+-
+Number(b.finish)
+);
 
 const ranking = [];
 
@@ -499,39 +515,43 @@ return b.point - a.point;
 
 return a.odds - b.odds;
 
-});    
+});
 
 raceHistory.push({
 
-    date: new Date().toLocaleDateString(),
+date:
+new Date().toLocaleDateString(),
 
-    raceName: document.getElementById(
-        "raceName"
-    ).value,
+raceName:
+document.getElementById(
+"raceName"
+).value,
 
-    trackCondition: document.getElementById(
-        "trackCondition"
-    ).value,
+trackCondition:
+document.getElementById(
+"trackCondition"
+).value,
 
-    trackBias: document.getElementById(
-        "trackBias"
-    ).value,
+trackBias:
+document.getElementById(
+"trackBias"
+).value,
 
-    favorite:
-    ranking.length > 0
-    ? ranking[0].name
-    : "",
+favorite:
+ranking.length > 0
+? ranking[0].name
+: "",
 
-    favoriteFinish:
-    top5.find(
-        h => h.name === (
-            ranking.length > 0
-            ? ranking[0].name
-            : ""
-        )
-    )?.finish || "着外",
+favoriteFinish:
+top5.find(
+h => h.name === (
+ranking.length > 0
+? ranking[0].name
+: ""
+)
+)?.finish || "着外",
 
-    top5
+top5
 
 });
 
@@ -544,6 +564,8 @@ renderDashboard();
 alert(
 "結果保存完了"
 );
+
+}
 
 function editHistory(index){
     const race = raceHistory[index];
