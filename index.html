@@ -707,27 +707,27 @@ function renderHistory(){
 
 function renderDashboard(){
     let totalRaces = raceHistory.length;
+    let hitCount = 0; // 3着以内（1〜3着）に入ったレース数
     let first = 0;
     let second = 0;
     let third = 0;
 
     raceHistory.forEach(race=>{
-        race.top5.forEach(horse=>{
-            const finish = Number(horse.finish);
-            if(finish === 1) first++;
-            if(finish === 2) second++;
-            if(finish === 3) third++;
-        });
+        // 保存されている「本命馬の着順 (favoriteFinish)」をチェックする
+        const finish = Number(race.favoriteFinish);
+        if(finish === 1) { first++; hitCount++; }
+        else if(finish === 2) { second++; hitCount++; }
+        else if(finish === 3) { third++; hitCount++; }
     });
 
-    const placeRate = totalRaces > 0 ? (((first + second + third) / totalRaces) * 100).toFixed(1) : 0;
+    const placeRate = totalRaces > 0 ? ((hitCount / totalRaces) * 100).toFixed(1) : 0;
 
     document.getElementById("dashboard").innerHTML = `
     総保存レース数：${totalRaces}レース<br><br>
-    1着記録：${first}<br>
-    2着記録：${second}<br>
-    3着記録：${third}<br><br>
-    3着内率：${placeRate}%
+    本命1着：${first}<br>
+    本命2着：${second}<br>
+    本命3着：${third}<br><br>
+    3着内率（複勝率）：${placeRate}%
     `;
 }
 </script>
