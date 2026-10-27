@@ -872,10 +872,41 @@ totalRaces
     📈 トータル収支：<b>${totalBalance >= 0 ? '+' : ''}${totalBalance.toLocaleString()}円</b><br>
     📊 回収率：<b>${recoveryRate}%</b><br>
     🎯 的中率：<b>${hitRate}%</b>（的中レース数: ${hitRaces} / ${totalRaces}）<br><br>
-    【参考：本命馬の成績】<br>
-    本命1着：${first}回 ／ 2着：${second}回 ／ 3着：${third}回
-    `;
-}
+   【本命馬成績】
+
+🏆 本命1着：
+${first}回
+
+<br>
+
+🥈 本命2着：
+${second}回
+
+<br>
+
+🥉 本命3着：
+${third}回
+
+<br>
+
+❌ 本命着外：
+${out}回
+
+<br><br>
+
+🏇 本命勝率：
+${winRate}%
+
+<br>
+
+🤝 本命連対率：
+${quinellaRate}%
+
+<br>
+
+🎯 本命複勝率：
+${placeRate}%
+
 </script>
 
 </body>
