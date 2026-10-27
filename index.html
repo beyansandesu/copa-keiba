@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>コパの競馬予想 Ver1.3</title>
+<title>コパの競馬予想 Ver1.4</title>
 
 <style>
 body{
@@ -137,14 +137,22 @@ select{
 <body>
 
 <div class="header">
-🐴 コパの競馬予想 Ver1.3
+🐴 コパの競馬予想 Ver1.4
 </div>
 
 <div class="container">
 
 <div class="card">
 <h2>レース情報・収支入力</h2>
-<input id="raceName" placeholder="例：大井11R" oninput="saveRaceInfo()">
+<input id="raceName" placeholder="例：門別11R" oninput="saveRaceInfo()">
+
+<label>天気</label>
+<select id="weather" onchange="saveRaceInfo()">
+<option value="晴">晴</option>
+<option value="曇">曇</option>
+<option value="雨">雨</option>
+<option value="雪">雪</option>
+</select>
 
 <label>馬場状態</label>
 <select id="trackCondition" onchange="saveRaceInfo()">
@@ -154,7 +162,7 @@ select{
 <option value="不良">不良</option>
 </select>
 
-<label>馬場傾向</label>
+<label>馬場傾向（トラックバイアス）</label>
 <select id="trackBias" onchange="saveRaceInfo()">
 <option value="フラット">フラット</option>
 <option value="内前有利">内前有利</option>
@@ -242,6 +250,7 @@ let raceHistory = JSON.parse(localStorage.getItem("raceHistory")) || [];
 
 // レース情報の復元
 document.getElementById("raceName").value = localStorage.getItem("raceName") || "";
+document.getElementById("weather").value = localStorage.getItem("weather") || "晴";
 document.getElementById("trackCondition").value = localStorage.getItem("trackCondition") || "良";
 document.getElementById("trackBias").value = localStorage.getItem("trackBias") || "フラット";
 document.getElementById("betAmount").value = localStorage.getItem("betAmount") || "";
@@ -262,6 +271,7 @@ function saveRaceHistory(){
 
 function saveRaceInfo(){
     localStorage.setItem("raceName", document.getElementById("raceName").value);
+    localStorage.setItem("weather", document.getElementById("weather").value);
     localStorage.setItem("trackCondition", document.getElementById("trackCondition").value);
     localStorage.setItem("trackBias", document.getElementById("trackBias").value);
     localStorage.setItem("betAmount", document.getElementById("betAmount").value);
@@ -279,7 +289,6 @@ function toggleHistory(){
     }
 }
     
-// 堅牢化された一括取込関数
 function importBulk(){
     const text = document.getElementById("bulkInput").value.trim();
     if(!text){
@@ -304,17 +313,14 @@ function importBulk(){
         let track = "△";
 
         if(cols.length === 6){
-            // 6列形式: 枠, 馬番, 馬名, 騎手, 斤量, オッズ
             jockey = cols[3];
             weight = cols[4];
             odds = cols[5];
         } else if(cols.length === 7){
-            // 7列形式: 枠, 馬番, 馬名, -, 騎手, 斤量, オッズ
             jockey = cols[4];
             weight = cols[5];
             odds = cols[6];
         } else if(cols.length >= 8){
-            // 8列以上形式: 枠, 馬番, 馬名, -, 騎手, 斤量, オッズ, 適性
             jockey = cols[4];
             weight = cols[5];
             odds = cols[6];
@@ -459,11 +465,13 @@ function deleteHorse(index){
 
 function exportJSON(){
     const raceName = document.getElementById("raceName").value;
+    const weather = document.getElementById("weather").value;
     const trackCondition = document.getElementById("trackCondition").value;
     const trackBias = document.getElementById("trackBias").value;
 
     const data = {
         raceName,
+        weather,
         trackCondition,
         trackBias,
         horses
@@ -489,10 +497,12 @@ function importJSON(){
     reader.onload = function(event){
         const data = JSON.parse(event.target.result);
         document.getElementById("raceName").value = data.raceName || "";
+        document.getElementById("weather").value = data.weather || "晴";
         document.getElementById("trackCondition").value = data.trackCondition || "良";
         document.getElementById("trackBias").value = data.trackBias || "フラット";
         
         localStorage.setItem("raceName", document.getElementById("raceName").value);
+        localStorage.setItem("weather", document.getElementById("weather").value);
         localStorage.setItem("trackCondition", document.getElementById("trackCondition").value);
         localStorage.setItem("trackBias", document.getElementById("trackBias").value);
 
@@ -535,6 +545,7 @@ function saveRaceResult(){
     raceHistory.push({
         date: new Date().toLocaleDateString(),
         raceName: document.getElementById("raceName").value,
+        weather: document.getElementById("weather").value,
         trackCondition: document.getElementById("trackCondition").value,
         trackBias: document.getElementById("trackBias").value,
         favorite: ranking.length > 0 ? ranking[0].name : "",
@@ -556,6 +567,8 @@ function editHistory(index){
 
     const newRaceName = prompt("レース名", race.raceName);
     if(newRaceName === null) return;
+    const newWeather = prompt("天気（晴/曇/雨/雪）", race.weather || "晴");
+    if(newWeather === null) return;
     const newTrackCondition = prompt("馬場状態（良/稍重/重/不良）", race.trackCondition);
     if(newTrackCondition === null) return;
     const newTrackBias = prompt("馬場傾向", race.trackBias);
@@ -585,6 +598,7 @@ function editHistory(index){
     }
 
     raceHistory[index].raceName = newRaceName;
+    raceHistory[index].weather = newWeather;
     raceHistory[index].trackCondition = newTrackCondition;
     raceHistory[index].trackBias = newTrackBias;
     raceHistory[index].bet = Number(newBet) || 0;
@@ -627,7 +641,9 @@ function getValuePoint(value){
     }
 }
 
+// 天気 × 馬場状態 × トラックバイアスを複合計算するロジック
 function getTrackPoint(track){
+    const weather = document.getElementById("weather").value;
     const condition = document.getElementById("trackCondition").value;
     const bias = document.getElementById("trackBias").value;
 
@@ -639,6 +655,7 @@ function getTrackPoint(track){
         default: basePoint = -1; break;
     }
 
+    // 1. 馬場状態による調整
     if(condition === "重" || condition === "不良"){
         if(track === "◎") basePoint += 2;
         else if(track === "○") basePoint += 1;
@@ -647,6 +664,13 @@ function getTrackPoint(track){
         if(track === "◎") basePoint += 1;
     }
 
+    // 2. 天気（雨・雪）による調整（水分の含みやすさ・馬場の重さ影響）
+    if(weather === "雨" || weather === "雪"){
+        if(track === "◎") basePoint += 1; // 悪天候適性馬を評価
+        else if(track === "×") basePoint -= 1;
+    }
+
+    // 3. トラックバイアス（傾向）による調整
     if(bias !== "フラット"){
         if(track === "◎" || track === "○"){
             basePoint += 1;
@@ -762,7 +786,7 @@ function renderHistory(){
 
         html += `<div class="history-item">`;
         html += `<b>📅 ${race.date || ""} ｜ ${race.raceName}</b><br>`;
-        html += `馬場：${race.trackCondition} ／ ${race.trackBias}<br>`;
+        html += `天気：${race.weather || "晴"} ／ 馬場：${race.trackCondition} ／ バイアス：${race.trackBias}<br>`;
         if(betMemo) html += `${betMemo}<br>`;
         html += `投資：${bet.toLocaleString()}円 ／ 払戻：${payout.toLocaleString()}円 （収支: ${balance >= 0 ? '+' : ''}${balance.toLocaleString()}円）<br><br>`;
 
