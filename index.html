@@ -332,24 +332,35 @@ function importBulk(){
         let frame = cols[0];
         let no = cols[1];
         let name = cols[2];
+        let style = "先行";
         let jockey = "";
         let weight = "";
         let odds = "";
         let track = "△";
 
-        if(cols.length === 6){
+        // 7列形式（枠番,馬番,馬名,脚質,騎手,斤量,オッズ）の対応
+        if(cols.length === 7){
+            style = cols[3] || "先行";
+            jockey = cols[4];
+            weight = cols[5];
+            odds = cols[6];
+        } else if(cols.length === 6){ // 6列形式（脚質なし）のフォールバック
             jockey = cols[3];
             weight = cols[4];
             odds = cols[5];
-        } else if(cols.length === 7){
-            jockey = cols[4];
-            weight = cols[5];
-            odds = cols[6];
         } else if(cols.length >= 8){
-            jockey = cols[4];
-            weight = cols[5];
-            odds = cols[6];
-            track = cols[7] || "△";
+            if(cols[3] === "-" || cols[3] === "逃げ" || cols[3] === "先行" || cols[3] === "差し" || cols[3] === "追込"){
+                style = cols[3] === "-" ? "先行" : cols[3];
+                jockey = cols[4];
+                weight = cols[5];
+                odds = cols[6];
+                track = cols[7] || "△";
+            } else {
+                jockey = cols[4];
+                weight = cols[5];
+                odds = cols[6];
+                track = cols[7] || "△";
+            }
         }
 
         horses.push({
@@ -358,7 +369,7 @@ function importBulk(){
             name: name,
             jockey: jockey,
             weight: weight,
-            style: "先行",
+            style: style,
             rank: getRankFromOdds(odds),
             value: getValueFromOdds(odds),
             track: track,
