@@ -816,6 +816,54 @@ else if(finish === 3) third++;
     const totalBalance = totalPayout - totalBet;
     const recoveryRate = totalBet > 0 ? ((totalPayout / totalBet) * 100).toFixed(1) : 0;
     const hitRate = totalRaces > 0 ? ((hitRaces / totalRaces) * 100).toFixed(1) : 0;
+    const winRate =totalRaces > 0　?
+
+(
+(first / totalRaces)
+*
+100
+).toFixed(1)
+
+: 0;
+
+const quinellaRate =
+
+totalRaces > 0
+
+?
+
+(
+(
+first +
+second
+)
+/
+totalRaces
+*
+100
+).toFixed(1)
+
+: 0;
+
+const placeRate =
+
+totalRaces > 0
+
+?
+
+(
+(
+first +
+second +
+third
+)
+/
+totalRaces
+*
+100
+).toFixed(1)
+
+: 0;
 
     document.getElementById("dashboard").innerHTML = `
     総保存レース数：${totalRaces}レース<br><br>
