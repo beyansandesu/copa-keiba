@@ -203,9 +203,8 @@ select{
     
 <div class="card">
 <h3>📥 出走表一括取込</h3>
-<textarea id="bulkInput" placeholder="枠番,馬番,馬名,騎手,斤量,オッズ,馬場適性(任意)
-例：1,1,サヴマ,横山武史,57,3.5,◎
-または：1,1,トーケンマコット,-,亀井洋司,55.0,56.5"></textarea>
+<textarea id="bulkInput" placeholder="枠番,馬番,馬名,-,騎手,斤量,オッズ
+例：1,1,トーケンマコット,-,亀井洋司,55.0,56.5"></textarea>
 <button class="add-btn" onclick="importBulk()">📥 一括取込</button>
 </div>
 
@@ -280,7 +279,7 @@ function toggleHistory(){
     }
 }
     
-// 7列・8列（ハイフン等を含むデータ）にも自動調整で対応する一括取込関数
+// ハイフン（-）などの余分な項目が含まれるデータ構造（7列）に対応した一括取込関数
 function importBulk(){
     const text = document.getElementById("bulkInput").value.trim();
     if(!text){
@@ -304,15 +303,19 @@ function importBulk(){
         let odds = "";
         let track = "△";
 
-        // 列パターン判定 (「-」や余分な数字が入っている7列/8列データに対応)
-        if(cols.length >= 7 && (cols[3].trim() === "-" || !isNaN(cols[3].trim())) && isNaN(cols[4].trim())){
-            // 4列目が「-」や数字で、5列目が文字列（騎手名）の場合
+        // 4番目が「-」などのハイフンである7列パターンに対応
+        if(cols.length === 7 && cols[3].trim() === "-"){
             jockey = cols[4].trim();
             weight = cols[5].trim();
             odds = cols[6].trim();
-            if(cols.length >= 8) track = cols[7].trim() || "△";
+        } else if(cols.length >= 8 && cols[3].trim() === "-"){
+            // 8列以上で適性などが後ろに含まれている場合
+            jockey = cols[4].trim();
+            weight = cols[5].trim();
+            odds = cols[6].trim();
+            track = cols[7].trim() || "△";
         } else {
-            // 通常のパターン (枠, 馬番, 馬名, 騎手, 斤量, オッズ, [適性])
+            // 通常の6〜7列パターン (枠, 馬番, 馬名, 騎手, 斤量, オッズ, [適性])
             jockey = cols[3].trim();
             weight = cols[4].trim();
             odds = cols[5].trim();
