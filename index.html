@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>コパの競馬予想 Ver1.4</title>
+<title>コパの競馬予想 Ver1.6</title>
 
 <style>
 body{
@@ -35,7 +35,8 @@ body{
 }
 
 input,
-textarea{
+textarea,
+select{
     width:100%;
     padding:10px;
     margin-bottom:10px;
@@ -124,20 +125,13 @@ button{
     padding: 8px;
     border-radius: 4px;
 }
-
-select{
-    width:100%;
-    padding:10px;
-    margin-bottom:10px;
-    box-sizing:border-box;
-}
 </style>
 </head>
 
 <body>
 
 <div class="header">
-🐴 コパの競馬予想 Ver1.4
+🐴 コパの競馬予想 Ver1.6
 </div>
 
 <div class="container">
@@ -217,12 +211,19 @@ select{
 </div>
 
 <div class="card">
-<h2>出馬表入力</h2>
+<h2>出馬表手動入力</h2>
 <input id="horseFrame" placeholder="枠番">
 <input id="horseNo" placeholder="馬番">
 <input id="horseName" placeholder="馬名">
 <input id="horseJockey" placeholder="騎手">
 <input id="horseWeight" placeholder="斤量">
+<label>脚質</label>
+<select id="horseStyle">
+<option value="先行">先行</option>
+<option value="逃げ">逃げ</option>
+<option value="差し">差し</option>
+<option value="追込">追込</option>
+</select>
 <input id="horseRank" placeholder="評価（◎ ○ ▲ △ ×）">
 <input id="horseValue" placeholder="期待値ランク（S A B C D）">
 <input id="horseTrack" placeholder="馬場適性（◎ ○ △ ×）">
@@ -248,7 +249,6 @@ select{
 let horses = JSON.parse(localStorage.getItem("horses")) || [];
 let raceHistory = JSON.parse(localStorage.getItem("raceHistory")) || [];
 
-// レース情報の復元
 document.getElementById("raceName").value = localStorage.getItem("raceName") || "";
 document.getElementById("weather").value = localStorage.getItem("weather") || "晴";
 document.getElementById("trackCondition").value = localStorage.getItem("trackCondition") || "良";
@@ -282,11 +282,7 @@ function saveRaceInfo(){
 
 function toggleHistory(){
     const container = document.getElementById("historyContainer");
-    if(container.style.display === "none"){
-        container.style.display = "block";
-    } else {
-        container.style.display = "none";
-    }
+    container.style.display = (container.style.display === "none") ? "block" : "none";
 }
     
 function importBulk(){
@@ -333,6 +329,7 @@ function importBulk(){
             name: name,
             jockey: jockey,
             weight: weight,
+            style: "先行", // デフォルトで地方競馬に強い「先行」をセット
             rank: getRankFromOdds(odds),
             value: getValueFromOdds(odds),
             track: track,
@@ -345,7 +342,6 @@ function importBulk(){
 
     saveData();
     renderList();
-
     document.getElementById("bulkInput").value="";
     alert(count + "頭の一括取込完了");
 }
@@ -356,6 +352,7 @@ function addHorse(){
     const name = document.getElementById("horseName").value;
     const jockey = document.getElementById("horseJockey").value;
     const weight = document.getElementById("horseWeight").value;
+    const style = document.getElementById("horseStyle").value;
     const rank = document.getElementById("horseRank").value;
     const value = document.getElementById("horseValue").value;
     const track = document.getElementById("horseTrack").value;
@@ -369,17 +366,7 @@ function addHorse(){
     }
 
     horses.push({
-        frame,
-        no,
-        name,
-        jockey,
-        weight,
-        rank,
-        value,
-        track,
-        odds,
-        finish,
-        memo
+        frame, no, name, jockey, weight, style, rank, value, track, odds, finish, memo
     });
     
     saveData();
@@ -399,10 +386,7 @@ function addHorse(){
 }
 
 function clearAllHorses(){
-    if(horses.length === 0){
-        alert("登録されている馬がいません");
-        return;
-    }
+    if(horses.length === 0) return alert("登録されている馬がいません");
     if(confirm("登録されている出走馬をすべて削除しますか？")){
         horses = [];
         saveData();
@@ -413,44 +397,20 @@ function clearAllHorses(){
 
 function editHorse(index){
     const horse = horses[index];
+    const frame = prompt("枠番", horse.frame); if(frame===null) return;
+    const no = prompt("馬番", horse.no); if(no===null) return;
+    const name = prompt("馬名", horse.name); if(name===null) return;
+    const jockey = prompt("騎手", horse.jockey); if(jockey===null) return;
+    const weight = prompt("斤量", horse.weight); if(weight===null) return;
+    const style = prompt("脚質（逃げ/先行/差し/追込）", horse.style || "先行"); if(style===null) return;
+    const rank = prompt("評価（◎/○/▲/△/×）", horse.rank); if(rank===null) return;
+    const value = prompt("期待値ランク（S/A/B/C/D）", horse.value); if(value===null) return;
+    const odds = prompt("単勝オッズ", horse.odds); if(odds===null) return;
+    const finish = prompt("着順", horse.finish || ""); if(finish===null) return;
+    const memo = prompt("メモ", horse.memo || ""); if(memo===null) return;
+    const track = prompt("馬場適性", horse.track || "△"); if(track===null) return;   
 
-    const frame = prompt("枠番", horse.frame);
-    if(frame===null) return;
-    const no = prompt("馬番", horse.no);
-    if(no===null) return;
-    const name = prompt("馬名", horse.name);
-    if(name===null) return;
-    const jockey = prompt("騎手", horse.jockey);
-    if(jockey===null) return;
-    const weight = prompt("斤量", horse.weight);
-    if(weight===null) return;
-    const rank = prompt("評価", horse.rank);
-    if(rank===null) return;
-    const value = prompt("期待値ランク", horse.value);
-    if(value===null) return;
-    const odds = prompt("単勝オッズ", horse.odds);
-    if(odds===null) return;
-    const finish = prompt("着順", horse.finish || "");
-    if(finish===null) return;
-    const memo = prompt("メモ", horse.memo || "");
-    if(memo===null) return;
-    const track = prompt("馬場適性", horse.track || "△");
-    if(track===null) return;   
-
-    horses[index] = {
-        frame,
-        no,
-        name,
-        jockey,
-        weight,
-        rank,
-        value,
-        track,
-        odds,
-        finish,
-        memo
-    };
-
+    horses[index] = { frame, no, name, jockey, weight, style, rank, value, track, odds, finish, memo };
     saveData();
     renderList();
 }
@@ -464,35 +424,25 @@ function deleteHorse(index){
 }
 
 function exportJSON(){
-    const raceName = document.getElementById("raceName").value;
-    const weather = document.getElementById("weather").value;
-    const trackCondition = document.getElementById("trackCondition").value;
-    const trackBias = document.getElementById("trackBias").value;
-
     const data = {
-        raceName,
-        weather,
-        trackCondition,
-        trackBias,
+        raceName: document.getElementById("raceName").value,
+        weather: document.getElementById("weather").value,
+        trackCondition: document.getElementById("trackCondition").value,
+        trackBias: document.getElementById("trackBias").value,
         horses
     };
-
     const blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = (raceName || "race") + ".json";
+    a.download = (data.raceName || "race") + ".json";
     a.click();
     URL.revokeObjectURL(url);
 }
 
 function importJSON(){
     const file = document.getElementById("jsonFile").files[0];
-    if(!file){
-        alert("JSONファイルを選択してください");
-        return;
-    }
-
+    if(!file) return alert("JSONファイルを選択してください");
     const reader = new FileReader();
     reader.onload = function(event){
         const data = JSON.parse(event.target.result);
@@ -500,14 +450,8 @@ function importJSON(){
         document.getElementById("weather").value = data.weather || "晴";
         document.getElementById("trackCondition").value = data.trackCondition || "良";
         document.getElementById("trackBias").value = data.trackBias || "フラット";
-        
-        localStorage.setItem("raceName", document.getElementById("raceName").value);
-        localStorage.setItem("weather", document.getElementById("weather").value);
-        localStorage.setItem("trackCondition", document.getElementById("trackCondition").value);
-        localStorage.setItem("trackBias", document.getElementById("trackBias").value);
-
+        saveRaceInfo();
         horses = data.horses || [];
-
         saveData();
         renderList();
         alert("読込完了");
@@ -520,27 +464,10 @@ function saveRaceResult(){
     const payoutAmount = Number(document.getElementById("payoutAmount").value) || 0;
     const betMemo = document.getElementById("betMemo").value || "";
 
-    const top5 = horses.filter(h=>{
-        const finish = Number(h.finish);
-        return (finish >= 1 && finish <= 5);
-    }).sort((a,b)=> Number(a.finish) - Number(b.finish));
+    const top5 = horses.filter(h => Number(h.finish) >= 1 && Number(h.finish) <= 5)
+                      .sort((a,b)=> Number(a.finish) - Number(b.finish));
 
-    const ranking = [];
-    horses.forEach(horse=>{
-        const totalPoint = getRankPoint(horse.rank) + getValuePoint(horse.value || "D") + getTrackPoint(horse.track || "△");
-        ranking.push({
-            name: horse.name,
-            point: totalPoint,
-            odds: Number(horse.odds || 999)
-        });
-    });
-
-    ranking.sort((a,b)=>{
-        if(b.point !== a.point){
-            return b.point - a.point;
-        }
-        return a.odds - b.odds;
-    });
+    const ranking = getCalculatedRanking();
 
     raceHistory.push({
         date: new Date().toLocaleDateString(),
@@ -562,65 +489,6 @@ function saveRaceResult(){
     alert("結果と買い目・収支の保存が完了しました！");
 }
 
-function editHistory(index){
-    const race = raceHistory[index];
-
-    const newRaceName = prompt("レース名", race.raceName);
-    if(newRaceName === null) return;
-    const newWeather = prompt("天気（晴/曇/雨/雪）", race.weather || "晴");
-    if(newWeather === null) return;
-    const newTrackCondition = prompt("馬場状態（良/稍重/重/不良）", race.trackCondition);
-    if(newTrackCondition === null) return;
-    const newTrackBias = prompt("馬場傾向", race.trackBias);
-    if(newTrackBias === null) return;
-    const newBet = prompt("購入金額（円）", race.bet || 0);
-    if(newBet === null) return;
-    const newPayout = prompt("払戻金額（円）", race.payout || 0);
-    if(newPayout === null) return;
-    const newBetMemo = prompt("買い目・券種メモ", race.betMemo || "");
-    if(newBetMemo === null) return;
-
-    const updatedTop5 = [];
-    if(race.top5 && race.top5.length > 0){
-        for(let i = 0; i < race.top5.length; i++){
-            let h = race.top5[i];
-            let editThis = confirm(`${i+1}番目の馬「${h.name}（${h.finish}着）」を編集しますか？`);
-            if(editThis){
-                let newFinish = prompt("着順", h.finish);
-                if(newFinish === null) newFinish = h.finish;
-                let newName = prompt("馬名", h.name);
-                if(newName === null) newName = h.name;
-                updatedTop5.push({ finish: newFinish, name: newName });
-            } else {
-                updatedTop5.push(h);
-            }
-        }
-    }
-
-    raceHistory[index].raceName = newRaceName;
-    raceHistory[index].weather = newWeather;
-    raceHistory[index].trackCondition = newTrackCondition;
-    raceHistory[index].trackBias = newTrackBias;
-    raceHistory[index].bet = Number(newBet) || 0;
-    raceHistory[index].payout = Number(newPayout) || 0;
-    raceHistory[index].betMemo = newBetMemo;
-    raceHistory[index].top5 = updatedTop5;
-
-    saveRaceHistory();
-    renderHistory();
-    renderDashboard();
-    alert("保存済みレースを更新しました");
-}
-
-function deleteHistory(index){
-    if(confirm("この保存済みレースを削除しますか？")){
-        raceHistory.splice(index, 1);
-        saveRaceHistory();
-        renderHistory();
-        renderDashboard();
-    }
-}
-    
 function getRankPoint(rank){
     switch(rank){
         case "◎": return 5;
@@ -641,43 +509,47 @@ function getValuePoint(value){
     }
 }
 
-// 天気 × 馬場状態 × トラックバイアスを複合計算するロジック
-function getTrackPoint(track){
+// 馬場状態・天気・トラックバイアス・脚質を複合計算
+function getTrackAndStylePoint(horse){
     const weather = document.getElementById("weather").value;
     const condition = document.getElementById("trackCondition").value;
     const bias = document.getElementById("trackBias").value;
+    const style = horse.style || "先行";
+    const track = horse.track || "△";
 
-    let basePoint = 0;
-    switch(track){
-        case "◎": basePoint = 2; break;
-        case "○": basePoint = 1; break;
-        case "△": basePoint = 0; break;
-        default: basePoint = -1; break;
+    let point = 0;
+
+    // 1. 馬場適性基礎点
+    if(track === "◎") point += 2;
+    else if(track === "○") point += 1;
+    else if(track === "×") point -= 1;
+
+    // 2. 道悪・天候補正
+    if(condition === "重" || condition === "不良" || weather === "雨" || weather === "雪"){
+        if(track === "◎") point += 1;
+        else if(track === "×") point -= 1;
     }
 
-    // 1. 馬場状態による調整
-    if(condition === "重" || condition === "不良"){
-        if(track === "◎") basePoint += 2;
-        else if(track === "○") basePoint += 1;
-        else if(track === "×") basePoint -= 1;
-    } else if(condition === "稍重"){
-        if(track === "◎") basePoint += 1;
+    // 3. 脚質 × トラックバイアス連動（最重要）
+    if(bias === "内前有利" || bias === "外前有利"){
+        if(style === "逃げ" || style === "先行") point += 2.0; // 前残り補正
+        else if(style === "追込") point -= 1.0;
+    } else if(bias === "内差有利" || bias === "外差有利"){
+        if(style === "差し" || style === "追込") point += 2.0; // 差し有利補正
+        else if(style === "逃げ") point -= 1.0;
     }
 
-    // 2. 天気（雨・雪）による調整（水分の含みやすさ・馬場の重さ影響）
-    if(weather === "雨" || weather === "雪"){
-        if(track === "◎") basePoint += 1; // 悪天候適性馬を評価
-        else if(track === "×") basePoint -= 1;
-    }
+    return point;
+}
 
-    // 3. トラックバイアス（傾向）による調整
-    if(bias !== "フラット"){
-        if(track === "◎" || track === "○"){
-            basePoint += 1;
-        }
+// 騎手ボーナス判定
+function getJockeyBonus(jockeyName){
+    if(!jockeyName) return 0;
+    const topJockeys = ["落合玄太", "阿部龍", "桑村真明", "石川倭", "服部茂史", "吉原寛人", "宮下瞳", "矢野貴之", "森泰斗"];
+    for(let top of topJockeys){
+        if(jockeyName.includes(top)) return 1.0;
     }
-
-    return basePoint;
+    return 0;
 }
 
 function getRankFromOdds(odds){
@@ -698,71 +570,70 @@ function getValueFromOdds(odds){
     return "S";
 }
 
+function getCalculatedRanking(){
+    const ranking = [];
+    horses.forEach(horse=>{
+        const rankPt = getRankPoint(horse.rank);
+        const valPt = getValuePoint(horse.value || "D");
+        const envPt = getTrackAndStylePoint(horse);
+        const jckPt = getJockeyBonus(horse.jockey);
+        const total = rankPt + valPt + envPt + jckPt;
+
+        ranking.push({
+            name: horse.name,
+            point: total,
+            odds: Number(horse.odds || 999)
+        });
+    });
+
+    ranking.sort((a,b)=>{
+        if(b.point !== a.point) return b.point - a.point;
+        return a.odds - b.odds;
+    });
+    return ranking;
+}
+
 function renderList(){
     let html = "";
-
     horses.forEach((horse,index)=>{
-        const totalPoint = getRankPoint(horse.rank) + getValuePoint(horse.value || "D") + getTrackPoint(horse.track || "△");
+        const envPt = getTrackAndStylePoint(horse);
+        const jckPt = getJockeyBonus(horse.jockey);
+        const totalPoint = getRankPoint(horse.rank) + getValuePoint(horse.value || "D") + envPt + jckPt;
 
         html += `
         <div class="horse">
-        <b>${horse.frame}枠 ${horse.no}番 ${horse.name}</b>
+        <b>${horse.frame}枠 ${horse.no}番 ${horse.name}</b>（脚質：${horse.style || "先行"}）
         <br><br>
         <div class="rank">評価：${horse.rank}</div>
         <div class="value">期待値：${horse.value}<br>
         馬場適性：${horse.track || "△"}<br>
+        バイアス・脚質加算：${envPt >= 0 ? '+' + envPt : envPt}点<br>
+        騎手補正：${jckPt > 0 ? '+' + jckPt + '点 (' + horse.jockey + ')' : 'なし'}<br>
         総合点：${totalPoint}</div>
         <br>
         騎手：${horse.jockey}<br>
         斤量：${horse.weight}kg<br><br>
         単勝オッズ：${horse.odds || "-"}<br>
         着順：${horse.finish || "-"}<br>
-        <div class="memo">
-        <b>メモ</b><br>${horse.memo || "なし"}
-        </div>
+        <div class="memo"><b>メモ</b><br>${horse.memo || "なし"}</div>
         <br>
         <button class="edit-btn" onclick="editHorse(${index})">✏️編集</button>
         <button class="delete-btn" onclick="deleteHorse(${index})">🗑削除</button>
         </div>
         `;
     });
-
     document.getElementById("horseList").innerHTML = html;
     updateSummary();
 }
 
 function updateSummary(){
-    let mainHorse = "まだ登録されていません";
-    const marks = [];
-    const ranking = [];
-
-    horses.forEach(horse=>{
-        const totalPoint = getRankPoint(horse.rank) + getValuePoint(horse.value || "D") + getTrackPoint(horse.track || "△");
-        ranking.push({
-            name: horse.name,
-            point: totalPoint,
-            odds: Number(horse.odds || 999)
-        });
-    });
-
-    ranking.sort((a,b)=>{
-        if(b.point !== a.point){
-            return b.point - a.point;
-        }
-        return a.odds - b.odds;
-    });
-
-    if(ranking.length > 0){
-        mainHorse = `${ranking[0].name}（総合点:${ranking[0].point}）`;
-    }
-
+    const ranking = getCalculatedRanking();
+    let mainHorse = ranking.length > 0 ? `${ranking[0].name}（総合点:${ranking[0].point}）` : "まだ登録されていません";
+    
     const markSymbol = ["◎","○","▲","△"];
-    marks.length = 0;
-
+    const marks = [];
     ranking.forEach((horse,index)=>{
-        if(index < 4){
-            marks.push(`${markSymbol[index]} ${horse.name}`);
-        }
+        if(index < 4) marks.push(`${markSymbol[index]} ${horse.name}`);
     });   
 
     let rankingHtml = "";
@@ -777,7 +648,6 @@ function updateSummary(){
 
 function renderHistory(){
     let html = "";
-
     raceHistory.forEach((race, index)=>{
         const bet = race.bet || 0;
         const payout = race.payout || 0;
@@ -803,7 +673,6 @@ function renderHistory(){
         html += `<button class="delete-btn" onclick="deleteHistory(${index})">🗑削除</button>`;
         html += `</div>`;
     });
-
     document.getElementById("historyList").innerHTML = html || "まだ保存されていません";
 }
 
@@ -812,20 +681,14 @@ function renderDashboard(){
     let totalBet = 0;
     let totalPayout = 0;
     let hitRaces = 0; 
-    
-    let first = 0;
-    let second = 0;
-    let third = 0;
+    let first = 0, second = 0, third = 0;
 
     raceHistory.forEach(race=>{
         const bet = race.bet || 0;
         const payout = race.payout || 0;
         totalBet += bet;
         totalPayout += payout;
-
-        if(payout > 0){
-            hitRaces++;
-        }
+        if(payout > 0) hitRaces++;
 
         const finish = Number(race.favoriteFinish);
         if(finish === 1) first++;
