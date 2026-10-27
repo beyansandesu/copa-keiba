@@ -805,11 +805,13 @@ function renderDashboard(){
             hitRaces++;
         }
 
-        const finish = Number(race.favoriteFinish);
-        if(finish === 1) first++;
-        else if(finish === 2) second++;
-        else if(finish === 3) third++;
-    });
+const finish =Number(race.favoriteFinish);
+
+if(finish === 1) first++;
+
+else if(finish === 2) second++;
+
+else if(finish === 3) third++;
 
     const totalBalance = totalPayout - totalBet;
     const recoveryRate = totalBet > 0 ? ((totalPayout / totalBet) * 100).toFixed(1) : 0;
