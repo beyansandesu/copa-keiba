@@ -279,7 +279,7 @@ function toggleHistory(){
     }
 }
     
-// ハイフン（-）などの余分な項目が含まれるデータ構造（7列）に対応した一括取込関数
+// 堅牢化された一括取込関数
 function importBulk(){
     const text = document.getElementById("bulkInput").value.trim();
     if(!text){
@@ -292,34 +292,33 @@ function importBulk(){
 
     lines.forEach(line=>{
         if(!line.trim()) return;
-        const cols = line.split(",");
+        const cols = line.split(",").map(c => c.trim());
         if(cols.length < 6) return;
 
-        let frame = cols[0].trim();
-        let no = cols[1].trim();
-        let name = cols[2].trim();
+        let frame = cols[0];
+        let no = cols[1];
+        let name = cols[2];
         let jockey = "";
         let weight = "";
         let odds = "";
         let track = "△";
 
-        // 4番目が「-」などのハイフンである7列パターンに対応
-        if(cols.length === 7 && cols[3].trim() === "-"){
-            jockey = cols[4].trim();
-            weight = cols[5].trim();
-            odds = cols[6].trim();
-        } else if(cols.length >= 8 && cols[3].trim() === "-"){
-            // 8列以上で適性などが後ろに含まれている場合
-            jockey = cols[4].trim();
-            weight = cols[5].trim();
-            odds = cols[6].trim();
-            track = cols[7].trim() || "△";
-        } else {
-            // 通常の6〜7列パターン (枠, 馬番, 馬名, 騎手, 斤量, オッズ, [適性])
-            jockey = cols[3].trim();
-            weight = cols[4].trim();
-            odds = cols[5].trim();
-            if(cols.length >= 7) track = cols[6].trim() || "△";
+        if(cols.length === 6){
+            // 6列形式: 枠, 馬番, 馬名, 騎手, 斤量, オッズ
+            jockey = cols[3];
+            weight = cols[4];
+            odds = cols[5];
+        } else if(cols.length === 7){
+            // 7列形式: 枠, 馬番, 馬名, -, 騎手, 斤量, オッズ
+            jockey = cols[4];
+            weight = cols[5];
+            odds = cols[6];
+        } else if(cols.length >= 8){
+            // 8列以上形式: 枠, 馬番, 馬名, -, 騎手, 斤量, オッズ, 適性
+            jockey = cols[4];
+            weight = cols[5];
+            odds = cols[6];
+            track = cols[7] || "△";
         }
 
         horses.push({
@@ -793,7 +792,6 @@ function renderDashboard(){
     let first = 0;
     let second = 0;
     let third = 0;
-    let out = 0;
 
     raceHistory.forEach(race=>{
         const bet = race.bet || 0;
@@ -805,65 +803,15 @@ function renderDashboard(){
             hitRaces++;
         }
 
-const finish =Number(race.favoriteFinish);
-
-if(finish === 1) first++;
-
-else if(finish === 2) second++;
-
-else if(finish === 3) third++;
+        const finish = Number(race.favoriteFinish);
+        if(finish === 1) first++;
+        else if(finish === 2) second++;
+        else if(finish === 3) third++;
+    });
 
     const totalBalance = totalPayout - totalBet;
     const recoveryRate = totalBet > 0 ? ((totalPayout / totalBet) * 100).toFixed(1) : 0;
     const hitRate = totalRaces > 0 ? ((hitRaces / totalRaces) * 100).toFixed(1) : 0;
-    const winRate =totalRaces > 0　?
-
-(
-(first / totalRaces)
-*
-100
-).toFixed(1)
-
-: 0;
-
-const quinellaRate =
-
-totalRaces > 0
-
-?
-
-(
-(
-first +
-second
-)
-/
-totalRaces
-*
-100
-).toFixed(1)
-
-: 0;
-
-const placeRate =
-
-totalRaces > 0
-
-?
-
-(
-(
-first +
-second +
-third
-)
-/
-totalRaces
-*
-100
-).toFixed(1)
-
-: 0;
 
     document.getElementById("dashboard").innerHTML = `
     総保存レース数：${totalRaces}レース<br><br>
@@ -872,41 +820,10 @@ totalRaces
     📈 トータル収支：<b>${totalBalance >= 0 ? '+' : ''}${totalBalance.toLocaleString()}円</b><br>
     📊 回収率：<b>${recoveryRate}%</b><br>
     🎯 的中率：<b>${hitRate}%</b>（的中レース数: ${hitRaces} / ${totalRaces}）<br><br>
-   【本命馬成績】
-
-🏆 本命1着：
-${first}回
-
-<br>
-
-🥈 本命2着：
-${second}回
-
-<br>
-
-🥉 本命3着：
-${third}回
-
-<br>
-
-❌ 本命着外：
-${out}回
-
-<br><br>
-
-🏇 本命勝率：
-${winRate}%
-
-<br>
-
-🤝 本命連対率：
-${quinellaRate}%
-
-<br>
-
-🎯 本命複勝率：
-${placeRate}%
-
+    【参考：本命馬の成績】<br>
+    本命1着：${first}回 ／ 2着：${second}回 ／ 3着：${third}回
+    `;
+}
 </script>
 
 </body>
