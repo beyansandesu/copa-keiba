@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>コパの競馬予想 Ver1.6</title>
+<title>コパの競馬予想 Ver1.7</title>
 
 <style>
 body{
@@ -44,7 +44,7 @@ select{
 }
 
 textarea{
-    min-height:100px;
+    min-height:80px;
 }
 
 button{
@@ -131,7 +131,7 @@ button{
 <body>
 
 <div class="header">
-🐴 コパの競馬予想 Ver1.6
+🐴 コパの競馬予想 Ver1.7
 </div>
 
 <div class="container">
@@ -165,14 +165,16 @@ button{
 <option value="外差有利">外差有利</option>
 </select>
 
+<label>買い目・券種メモ（複数購入時も金額を自動計算します）</label>
+<textarea id="betMemo" placeholder="例：
+馬連 3-8 1000円
+ワイド 3-5 500円" oninput="autoCalculateBetAmount(); saveRaceInfo();"></textarea>
+
 <label>馬券購入金額（投資額）</label>
-<input type="number" id="betAmount" placeholder="例：1000" oninput="saveRaceInfo()">
+<input type="number" id="betAmount" placeholder="例：1500（メモから自動計算可能）" oninput="saveRaceInfo()">
 
 <label>払戻金額（的中時）</label>
 <input type="number" id="payoutAmount" placeholder="例：0（ハズレは0）" oninput="saveRaceInfo()">
-
-<label>買い目・券種メモ</label>
-<input id="betMemo" placeholder="例：馬連 3-8 (1,000円)" oninput="saveRaceInfo()">
 </div>
 
 <div class="card">
@@ -231,7 +233,7 @@ button{
 <input id="horseFinish" placeholder="着順（1～18）">
 <textarea id="horseMemo" placeholder="メモ"></textarea>
 <button class="add-btn" onclick="addHorse()">馬を追加</button>
-<button class="clear-btn" onclick="clearAllHorses()">🗑️ 登録馬をすべてクリア</button>
+<button class="clear-btn" onclick="clearAllHorses()">🗑️ 登録馬と収支入力欄をすべてクリア</button>
 <button class="save-btn" onclick="exportJSON()">💾 JSON保存</button>
 <button class="save-btn" onclick="saveRaceResult()">🏁 レース結果・収支保存</button>
 <input type="file" id="jsonFile" accept=".json">
@@ -278,6 +280,33 @@ function saveRaceInfo(){
     localStorage.setItem("payoutAmount", document.getElementById("payoutAmount").value);
     localStorage.setItem("betMemo", document.getElementById("betMemo").value);
     renderList();
+}
+
+// 買い目メモから金額パターン（〇〇円 や 〇〇00 など）を抽出して合計投資額を自動入力
+function autoCalculateBetAmount(){
+    const memo = document.getElementById("betMemo").value;
+    if(!memo.trim()) return;
+
+    // 「数字 + 円」または独立した金額数値を全検出
+    const matches = memo.match(/(\d{1,3}(?:,\d{3})*|\d+)\s*円?/g);
+    if(!matches) return;
+
+    let total = 0;
+    matches.forEach(m => {
+        // 数字部分だけ取り出し
+        const numStr = m.replace(/[^\d]/g, "");
+        if(numStr){
+            const val = parseInt(numStr, 10);
+            // 100円以上の単位を金額とみなす（馬番との誤判定防止）
+            if(val >= 100){
+                total += val;
+            }
+        }
+    });
+
+    if(total > 0){
+        document.getElementById("betAmount").value = total;
+    }
 }
 
 function toggleHistory(){
@@ -329,7 +358,7 @@ function importBulk(){
             name: name,
             jockey: jockey,
             weight: weight,
-            style: "先行", // デフォルトで地方競馬に強い「先行」をセット
+            style: "先行",
             rank: getRankFromOdds(odds),
             value: getValueFromOdds(odds),
             track: track,
@@ -386,12 +415,25 @@ function addHorse(){
 }
 
 function clearAllHorses(){
-    if(horses.length === 0) return alert("登録されている馬がいません");
-    if(confirm("登録されている出走馬をすべて削除しますか？")){
+    if(horses.length === 0 && !document.getElementById("betAmount").value){
+        alert("クリアするデータがありません");
+        return;
+    }
+    if(confirm("登録されている出走馬および購入金額・払戻金・メモをすべてクリアしますか？")){
         horses = [];
         saveData();
+
+        // 収支・メモ入力欄のクリア
+        document.getElementById("betAmount").value = "";
+        document.getElementById("payoutAmount").value = "";
+        document.getElementById("betMemo").value = "";
+
+        localStorage.removeItem("betAmount");
+        localStorage.removeItem("payoutAmount");
+        localStorage.removeItem("betMemo");
+
         renderList();
-        alert("すべての出走馬を削除しました");
+        alert("出走馬と収支入力欄をすべてクリアしました");
     }
 }
 
@@ -484,6 +526,16 @@ function saveRaceResult(){
     });
 
     saveRaceHistory();
+
+    // 結果保存後に収支入力欄をクリア
+    document.getElementById("betAmount").value = "";
+    document.getElementById("payoutAmount").value = "";
+    document.getElementById("betMemo").value = "";
+
+    localStorage.removeItem("betAmount");
+    localStorage.removeItem("payoutAmount");
+    localStorage.removeItem("betMemo");
+
     renderHistory();
     renderDashboard();
     alert("結果と買い目・収支の保存が完了しました！");
@@ -509,7 +561,6 @@ function getValuePoint(value){
     }
 }
 
-// 馬場状態・天気・トラックバイアス・脚質を複合計算
 function getTrackAndStylePoint(horse){
     const weather = document.getElementById("weather").value;
     const condition = document.getElementById("trackCondition").value;
@@ -519,30 +570,26 @@ function getTrackAndStylePoint(horse){
 
     let point = 0;
 
-    // 1. 馬場適性基礎点
     if(track === "◎") point += 2;
     else if(track === "○") point += 1;
     else if(track === "×") point -= 1;
 
-    // 2. 道悪・天候補正
     if(condition === "重" || condition === "不良" || weather === "雨" || weather === "雪"){
         if(track === "◎") point += 1;
         else if(track === "×") point -= 1;
     }
 
-    // 3. 脚質 × トラックバイアス連動（最重要）
     if(bias === "内前有利" || bias === "外前有利"){
-        if(style === "逃げ" || style === "先行") point += 2.0; // 前残り補正
+        if(style === "逃げ" || style === "先行") point += 2.0;
         else if(style === "追込") point -= 1.0;
     } else if(bias === "内差有利" || bias === "外差有利"){
-        if(style === "差し" || style === "追込") point += 2.0; // 差し有利補正
+        if(style === "差し" || style === "追込") point += 2.0;
         else if(style === "逃げ") point -= 1.0;
     }
 
     return point;
 }
 
-// 騎手ボーナス判定
 function getJockeyBonus(jockeyName){
     if(!jockeyName) return 0;
     const topJockeys = ["落合玄太", "阿部龍", "桑村真明", "石川倭", "服部茂史", "吉原寛人", "宮下瞳", "矢野貴之", "森泰斗"];
@@ -652,12 +699,12 @@ function renderHistory(){
         const bet = race.bet || 0;
         const payout = race.payout || 0;
         const balance = payout - bet;
-        const betMemo = race.betMemo ? `買い目: ${race.betMemo}` : "";
+        const betMemo = race.betMemo ? `買い目:\n${race.betMemo}` : "";
 
         html += `<div class="history-item">`;
         html += `<b>📅 ${race.date || ""} ｜ ${race.raceName}</b><br>`;
         html += `天気：${race.weather || "晴"} ／ 馬場：${race.trackCondition} ／ バイアス：${race.trackBias}<br>`;
-        if(betMemo) html += `${betMemo}<br>`;
+        if(betMemo) html += `<pre style="font-family:inherit;margin:5px 0;">${betMemo}</pre>`;
         html += `投資：${bet.toLocaleString()}円 ／ 払戻：${payout.toLocaleString()}円 （収支: ${balance >= 0 ? '+' : ''}${balance.toLocaleString()}円）<br><br>`;
 
         if(race.top5 && race.top5.length > 0){
