@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>コパby地方競馬 予想・収支管理アプリ Ver1.8</title>
+    <title>地方競馬 予想・収支管理アプリ Ver2.0</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -40,6 +40,8 @@
         .btn-danger:hover { background-color: #d70015; }
         .btn-success { background-color: #34c759; }
         .btn-success:hover { background-color: #28a745; }
+        .btn-secondary { background-color: #5856d6; }
+        .btn-secondary:hover { background-color: #4a47b1; }
         textarea, input, select {
             width: 100%;
             padding: 10px;
@@ -90,7 +92,7 @@
 </head>
 <body>
 
-    <h1>🐎 コパby地方競馬 予想・収支管理 (Ver1.8)</h1>
+    <h1>🐎 地方競馬 予想・収支管理 (Ver2.0)</h1>
 
     <!-- 今日の印・要約 -->
     <div class="card">
@@ -207,6 +209,17 @@
         <button class="btn btn-success" onclick="saveRaceHistory()" style="margin-top: 12px;">💾 このレース結果・収支を保存</button>
     </div>
 
+    <!-- データバックアップ・管理 -->
+    <div class="card">
+        <h3>💾 データバックアップ・管理</h3>
+        <p style="font-size: 12px; color: #666;">ブラウザのデータ消失対策として、定期的にバックアップを保存することをおすすめします。</p>
+        <div class="flex-group">
+            <button class="btn btn-secondary" onclick="exportData()" style="margin-top:4px;">📤 バックアップを保存 (JSON)</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()" style="margin-top:4px;">📥 復元 (ファイル選択)</button>
+        </div>
+        <input type="file" id="importFile" style="display:none" accept=".json" onchange="importData(event)">
+    </div>
+
     <!-- ダッシュボード＆履歴 -->
     <div class="card">
         <h2>📊 地方競馬 成績・収支ダッシュボード</h2>
@@ -238,7 +251,7 @@
             }
         }
 
-        // 一括取込処理（脚質テキストの正しい読み取り対応）
+        // 一括取込処理
         function importBulk() {
             const text = document.getElementById("bulkInput").value.trim();
             if(!text){
@@ -324,7 +337,7 @@
             return "△";
         }
 
-        // 指数計算ロジック（仮スコア計算）
+        // 指数計算ロジック
         function getCalculatedRanking() {
             return horses.map(h => {
                 let pt = 50;
@@ -341,11 +354,10 @@
             }).sort((a, b) => b.point - a.point);
         }
 
-        // 今日の印一覧・ランキング更新（◎〜×の5頭表示対応）
+        // 今日の印一覧・ランキング描画
         function renderList() {
             const ranking = getCalculatedRanking();
             
-            // 5頭分の印（◎、○、▲、△、×）
             const markSymbol = ["◎","○","▲","△","×"];
             const marks = [];
             ranking.forEach((horse, index) => {
@@ -369,7 +381,7 @@
             document.getElementById("rankingList").innerHTML = html || "まだ登録されていません";
         }
 
-        // 複数買い目テキストから投資額合計を抽出計算する関数
+        // 複数買い目テキストから投資額合計を抽出計算
         function calculateTotalInvestment(text) {
             if(!text) return 0;
             const matches = text.match(/(\d+)\s*円/g);
@@ -382,11 +394,11 @@
             return total;
         }
 
-        // レース結果保存処理（ドロップダウン＆連動リセット対応）
+        // レース結果保存処理
         function saveRaceHistory() {
             const track = document.getElementById("trackSelect").value;
             const raceNo = document.getElementById("raceNoSelect").value;
-            const raceName = track + raceNo; // 例: 「大井11レース」
+            const raceName = track + raceNo;
 
             const betsText = document.getElementById("betsInput").value.trim();
             const investment = calculateTotalInvestment(betsText);
@@ -403,12 +415,16 @@
                 return;
             }
 
+            const ranking = getCalculatedRanking();
+            const favoriteName = ranking.length > 0 ? ranking[0].name : "";
+
             const today = new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' });
 
             const historyData = {
                 id: Date.now(),
                 date: today,
                 raceName: raceName,
+                favorite: favoriteName,
                 weather: document.getElementById("weather").value,
                 trackCondition: document.getElementById("trackCondition").value,
                 bias: document.getElementById("bias").value,
@@ -422,13 +438,11 @@
             raceHistories.unshift(historyData);
             localStorage.setItem("raceHistories", JSON.stringify(raceHistories));
 
-            // 保存完了後に自動リセット
             resetInputFields();
             renderDashboard();
             alert("レース結果と収支を保存しました！");
         }
 
-        // 入力欄連動リセット関数
         function resetInputFields() {
             document.getElementById("betsInput").value = "";
             document.getElementById("payout").value = "";
@@ -447,29 +461,88 @@
             }
         }
 
-        // ダッシュボード＆履歴の描画
+        // JSONバックアップ書き出し機能
+        function exportData() {
+            const dataObj = {
+                raceHistories: raceHistories,
+                exportDate: new Date().toISOString()
+            };
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dataObj, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `keiba_backup_${new Date().toISOString().slice(0,10)}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        // JSONバックアップ読み込み・復元機能
+        function importData(event) {
+            const file = event.target.files[0];
+            if(!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    if(parsed.raceHistories && Array.isArray(parsed.raceHistories)) {
+                        if(confirm(`バックアップファイルから ${parsed.raceHistories.length} 件のレース履歴を読み込みます。現在のデータに上書き・統合しますか？`)) {
+                            raceHistories = parsed.raceHistories;
+                            localStorage.setItem("raceHistories", JSON.stringify(raceHistories));
+                            renderDashboard();
+                            alert("データの復元が完了しました！");
+                        }
+                    } else {
+                        alert("有効なバックアップファイルではありません。");
+                    }
+                } catch(err) {
+                    alert("JSONファイルの読み込みに失敗しました。");
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = "";
+        }
+
+        // ダッシュボード描画（本命成績分析：勝率・連対率・複勝率の算出）
         function renderDashboard() {
             let totalInvestment = 0;
             let totalPayout = 0;
             let winRaces = 0;
             let totalRaces = raceHistories.length;
 
-            let h1 = 0, h2 = 0, h3 = 0;
+            let h1 = 0, h2 = 0, h3 = 0, hOut = 0;
+            let ratedRacesCount = 0; // 結果（着順）が入力されているレース数
 
             raceHistories.forEach(h => {
                 totalInvestment += h.investment;
                 totalPayout += h.payout;
                 if(h.income > 0) winRaces++;
 
-                // 本命馬の1〜3着カウント（仮として1着〜3着判定）
-                if(h.results[0]) h1++;
-                if(h.results[1]) h2++;
-                if(h.results[2]) h3++;
+                if (h.favorite && h.results && h.results.length > 0) {
+                    const fav = h.favorite.trim();
+                    if (fav !== "" && (h.results[0] || h.results[1] || h.results[2])) {
+                        ratedRacesCount++;
+                        if (h.results[0] && h.results[0].trim() === fav) {
+                            h1++;
+                        } else if (h.results[1] && h.results[1].trim() === fav) {
+                            h2++;
+                        } else if (h.results[2] && h.results[2].trim() === fav) {
+                            h3++;
+                        } else {
+                            hOut++;
+                        }
+                    }
+                }
             });
 
             const totalIncome = totalPayout - totalInvestment;
             const recoveryRate = totalInvestment > 0 ? ((totalPayout / totalInvestment) * 100).toFixed(1) : "0.0";
             const winRate = totalRaces > 0 ? ((winRaces / totalRaces) * 100).toFixed(1) : "0.0";
+
+            // 本命の勝率・連対率・複勝率の計算
+            const favWinRate = ratedRacesCount > 0 ? ((h1 / ratedRacesCount) * 100).toFixed(1) : "0.0";
+            const favQuinellaRate = ratedRacesCount > 0 ? (((h1 + h2) / ratedRacesCount) * 100).toFixed(1) : "0.0";
+            const favPlaceRate = ratedRacesCount > 0 ? (((h1 + h2 + h3) / ratedRacesCount) * 100).toFixed(1) : "0.0";
 
             document.getElementById("dashboardStats").innerHTML = `
                 <strong>総保存レース数：${totalRaces}レース</strong><br><br>
@@ -478,15 +551,19 @@
                 📈 <strong>トータル収支：</strong> <span style="color:${totalIncome >= 0 ? '#34c759' : '#ff3b30'}; font-weight:bold;">${totalIncome >= 0 ? '+' : ''}${totalIncome.toLocaleString()}円</span><br>
                 📊 <strong>回収率：</strong> <strong>${recoveryRate}%</strong><br>
                 🎯 <strong>的中率：</strong> ${winRate}% （的中レース数: ${winRaces} / ${totalRaces}）<br><br>
-                <strong>【参考：本命馬の成績】</strong><br>
-                本命1着：${h1}回 ／ 2着：${h2}回 ／ 3着：${h3}回
+                <strong>【🏆 本命馬（◎）の成績分析】</strong>（集計対象: ${ratedRacesCount}レース）<br>
+                ・<strong>本命勝率：</strong> ${favWinRate}% （1着: ${h1}回）<br>
+                ・<strong>本命連対率：</strong> ${favQuinellaRate}% （1〜2着: ${h1 + h2}回）<br>
+                ・<strong>本命複勝率：</strong> ${favPlaceRate}% （1〜3着: ${h1 + h2 + h3}回）<br>
+                <span style="font-size:12px; color:#666;">（内訳：1着:${h1}回 ／ 2着:${h2}回 ／ 3着:${h3}回 ／ 着外:${hOut}回）</span>
             `;
 
             let hHtml = "";
             raceHistories.forEach(h => {
+                const favText = h.favorite ? ` （本命: ${h.favorite}）` : "";
                 hHtml += `
                     <div class="history-item">
-                        <strong>📅 ${h.date} ｜ ${h.raceName}</strong><br>
+                        <strong>📅 ${h.date} ｜ ${h.raceName}${favText}</strong><br>
                         <span style="font-size:12px; color:#666;">天気:${h.weather} ／ 馬場:${h.trackCondition} ／ バイアス:${h.bias}</span><br>
                         <strong>買い目:</strong><br><span style="white-space:pre-wrap; font-size:13px;">${h.betsText || 'なし'}</span><br>
                         <strong>投資:</strong> ${h.investment.toLocaleString()}円 ／ <strong>払戻:</strong> ${h.payout.toLocaleString()}円 （収支: <span style="color:${h.income>=0?'#28a745':'#d70015'}">${h.income>=0?'+':''}${h.income.toLocaleString()}円</span>）<br>
