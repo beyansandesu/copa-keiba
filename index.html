@@ -688,10 +688,11 @@ function updateSummary(){
     const ranking = getCalculatedRanking();
     let mainHorse = ranking.length > 0 ? `${ranking[0].name}（総合点:${ranking[0].point}）` : "まだ登録されていません";
     
-    const markSymbol = ["◎","○","▲","△"];
+    // 5頭分の印（◎、○、▲、△、×）に変更
+    const markSymbol = ["◎","○","▲","△","×"];
     const marks = [];
     ranking.forEach((horse,index)=>{
-        if(index < 4) marks.push(`${markSymbol[index]} ${horse.name}`);
+        if(index < 5) marks.push(`${markSymbol[index]} ${horse.name}`);
     });   
 
     let rankingHtml = "";
