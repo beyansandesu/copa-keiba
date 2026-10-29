@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>コパby地方競馬 予想・収支管理アプリ Ver2.0</title>
+    <title>Copa by地方競馬 予想・収支管理アプリ Ver2.1</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -42,6 +42,8 @@
         .btn-success:hover { background-color: #28a745; }
         .btn-secondary { background-color: #5856d6; }
         .btn-secondary:hover { background-color: #4a47b1; }
+        .btn-warning { background-color: #ff9500; color: white; }
+        .btn-warning:hover { background-color: #e08500; }
         textarea, input, select {
             width: 100%;
             padding: 10px;
@@ -92,7 +94,7 @@
 </head>
 <body>
 
-    <h1>🐎 コパby地方競馬 予想・収支管理 (Ver2.0)</h1>
+    <h1>🐎 Copa by地方競馬 予想・収支管理 (Ver2.1)</h1>
 
     <!-- 今日の印・要約 -->
     <div class="card">
@@ -119,7 +121,8 @@
 
     <!-- レース情報・収支入力 -->
     <div class="card">
-        <h3>📝 レース情報・収支記録</h3>
+        <h3 id="formTitle">📝 レース情報・収支記録</h3>
+        <input type="hidden" id="editingId" value="">
         
         <label style="font-weight:bold; display:block; margin-bottom:4px;">レース選択</label>
         <div class="flex-group" style="margin-bottom: 8px;">
@@ -183,8 +186,10 @@
                 <label style="font-weight:bold; font-size:12px;">トラックバイアス</label>
                 <select id="bias">
                     <option value="内前有利" selected>内前有利</option>
+                    <option value="外前有利">外前有利</option>
+                    <option value="内差有利">内差有利</option>
+                    <option value="外差有利">外差有利</option>
                     <option value="フラット">フラット</option>
-                    <option value="外差し有利">外差し有利</option>
                 </select>
             </div>
         </div>
@@ -206,7 +211,8 @@
         <input type="text" id="result4" placeholder="4着馬名">
         <input type="text" id="result5" placeholder="5着馬名">
 
-        <button class="btn btn-success" onclick="saveRaceHistory()" style="margin-top: 12px;">💾 このレース結果・収支を保存</button>
+        <button class="btn btn-success" id="saveButton" onclick="saveRaceHistory()" style="margin-top: 12px;">💾 このレース結果・収支を保存</button>
+        <button class="btn btn-danger" id="cancelButton" onclick="cancelEdit()" style="margin-top: 4px; display: none;">❌ 編集をキャンセル</button>
     </div>
 
     <!-- データバックアップ・管理 -->
@@ -233,7 +239,6 @@
         let horses = [];
         let raceHistories = JSON.parse(localStorage.getItem("raceHistories")) || [];
 
-        // 初期読み込み
         window.onload = function() {
             loadSavedData();
             renderDashboard();
@@ -251,7 +256,6 @@
             }
         }
 
-        // 一括取込処理
         function importBulk() {
             const text = document.getElementById("bulkInput").value.trim();
             if(!text){
@@ -337,7 +341,6 @@
             return "△";
         }
 
-        // 指数計算ロジック
         function getCalculatedRanking() {
             return horses.map(h => {
                 let pt = 50;
@@ -354,10 +357,8 @@
             }).sort((a, b) => b.point - a.point);
         }
 
-        // 今日の印一覧・ランキング描画
         function renderList() {
             const ranking = getCalculatedRanking();
-            
             const markSymbol = ["◎","○","▲","△","×"];
             const marks = [];
             ranking.forEach((horse, index) => {
@@ -381,7 +382,6 @@
             document.getElementById("rankingList").innerHTML = html || "まだ登録されていません";
         }
 
-        // 複数買い目テキストから投資額合計を抽出計算
         function calculateTotalInvestment(text) {
             if(!text) return 0;
             const matches = text.match(/(\d+)\s*円/g);
@@ -394,7 +394,7 @@
             return total;
         }
 
-        // レース結果保存処理
+        // レース結果保存・更新処理
         function saveRaceHistory() {
             const track = document.getElementById("trackSelect").value;
             const raceNo = document.getElementById("raceNoSelect").value;
@@ -417,30 +417,94 @@
 
             const ranking = getCalculatedRanking();
             const favoriteName = ranking.length > 0 ? ranking[0].name : "";
-
             const today = new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' });
 
-            const historyData = {
-                id: Date.now(),
-                date: today,
-                raceName: raceName,
-                favorite: favoriteName,
-                weather: document.getElementById("weather").value,
-                trackCondition: document.getElementById("trackCondition").value,
-                bias: document.getElementById("bias").value,
-                betsText: betsText,
-                investment: investment,
-                payout: payout,
-                income: payout - investment,
-                results: [r1, r2, r3, r4, r5]
-            };
+            const editingId = document.getElementById("editingId").value;
 
-            raceHistories.unshift(historyData);
+            if (editingId) {
+                // 編集モードの場合：既存データを更新
+                const index = raceHistories.findIndex(h => h.id == editingId);
+                if (index !== -1) {
+                    raceHistories[index].raceName = raceName;
+                    raceHistories[index].weather = document.getElementById("weather").value;
+                    raceHistories[index].trackCondition = document.getElementById("trackCondition").value;
+                    raceHistories[index].bias = document.getElementById("bias").value;
+                    raceHistories[index].betsText = betsText;
+                    raceHistories[index].investment = investment;
+                    raceHistories[index].payout = payout;
+                    raceHistories[index].income = payout - investment;
+                    raceHistories[index].results = [r1, r2, r3, r4, r5];
+                    if(favoriteName) raceHistories[index].favorite = favoriteName; // 本命が再計算可能なら更新
+                }
+                alert("レース履歴を更新しました！");
+            } else {
+                // 新規保存の場合
+                const historyData = {
+                    id: Date.now(),
+                    date: today,
+                    raceName: raceName,
+                    favorite: favoriteName,
+                    weather: document.getElementById("weather").value,
+                    trackCondition: document.getElementById("trackCondition").value,
+                    bias: document.getElementById("bias").value,
+                    betsText: betsText,
+                    investment: investment,
+                    payout: payout,
+                    income: payout - investment,
+                    results: [r1, r2, r3, r4, r5]
+                };
+                raceHistories.unshift(historyData);
+                alert("レース結果と収支を保存しました！");
+            }
+
             localStorage.setItem("raceHistories", JSON.stringify(raceHistories));
-
-            resetInputFields();
+            cancelEdit();
             renderDashboard();
-            alert("レース結果と収支を保存しました！");
+        }
+
+        // 履歴編集モードに入る
+        function editHistory(id) {
+            const h = raceHistories.find(item => item.id == id);
+            if(!h) return;
+
+            // レース名から競馬場とレース番号を大まかに復元
+            for(let opt of document.getElementById("trackSelect").options) {
+                if(h.raceName.startsWith(opt.value)) {
+                    document.getElementById("trackSelect").value = opt.value;
+                    const rNo = h.raceName.replace(opt.value, "");
+                    document.getElementById("raceNoSelect").value = rNo;
+                    break;
+                }
+            }
+
+            document.getElementById("weather").value = h.weather || "晴";
+            document.getElementById("trackCondition").value = h.trackCondition || "良";
+            document.getElementById("bias").value = h.bias || "内前有利";
+            document.getElementById("betsInput").value = h.betsText || "";
+            document.getElementById("payout").value = h.payout || 0;
+            document.getElementById("result1").value = h.results[0] || "";
+            document.getElementById("result2").value = h.results[1] || "";
+            document.getElementById("result3").value = h.results[2] || "";
+            document.getElementById("result4").value = h.results[3] || "";
+            document.getElementById("result5").value = h.results[4] || "";
+
+            document.getElementById("editingId").value = h.id;
+            document.getElementById("formTitle").innerText = "📝 レース履歴の編集（ID: " + h.id + "）";
+            document.getElementById("saveButton").innerText = "💾 変更を上書き保存する";
+            document.getElementById("saveButton").className = "btn btn-warning";
+            document.getElementById("cancelButton").style.display = "block";
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // 編集キャンセル
+        function cancelEdit() {
+            document.getElementById("editingId").value = "";
+            document.getElementById("formTitle").innerText = "📝 レース情報・収支記録";
+            document.getElementById("saveButton").innerText = "💾 このレース結果・収支を保存";
+            document.getElementById("saveButton").className = "btn btn-success";
+            document.getElementById("cancelButton").style.display = "none";
+            resetInputFields();
         }
 
         function resetInputFields() {
@@ -461,7 +525,6 @@
             }
         }
 
-        // JSONバックアップ書き出し機能
         function exportData() {
             const dataObj = {
                 raceHistories: raceHistories,
@@ -476,7 +539,6 @@
             downloadAnchor.remove();
         }
 
-        // JSONバックアップ読み込み・復元機能
         function importData(event) {
             const file = event.target.files[0];
             if(!file) return;
@@ -503,7 +565,6 @@
             event.target.value = "";
         }
 
-        // ダッシュボード描画（本命成績分析：勝率・連対率・複勝率の算出）
         function renderDashboard() {
             let totalInvestment = 0;
             let totalPayout = 0;
@@ -511,7 +572,7 @@
             let totalRaces = raceHistories.length;
 
             let h1 = 0, h2 = 0, h3 = 0, hOut = 0;
-            let ratedRacesCount = 0; // 結果（着順）が入力されているレース数
+            let ratedRacesCount = 0;
 
             raceHistories.forEach(h => {
                 totalInvestment += h.investment;
@@ -539,7 +600,6 @@
             const recoveryRate = totalInvestment > 0 ? ((totalPayout / totalInvestment) * 100).toFixed(1) : "0.0";
             const winRate = totalRaces > 0 ? ((winRaces / totalRaces) * 100).toFixed(1) : "0.0";
 
-            // 本命の勝率・連対率・複勝率の計算
             const favWinRate = ratedRacesCount > 0 ? ((h1 / ratedRacesCount) * 100).toFixed(1) : "0.0";
             const favQuinellaRate = ratedRacesCount > 0 ? (((h1 + h2) / ratedRacesCount) * 100).toFixed(1) : "0.0";
             const favPlaceRate = ratedRacesCount > 0 ? (((h1 + h2 + h3) / ratedRacesCount) * 100).toFixed(1) : "0.0";
@@ -571,7 +631,10 @@
                             1着:${h.results[0]||'-'} ／ 2着:${h.results[1]||'-'} ／ 3着:${h.results[2]||'-'}<br>
                             4着:${h.results[3]||'-'} ／ 5着:${h.results[4]||'-'}
                         </div>
-                        <button class="btn btn-danger" style="padding:4px 8px; font-size:12px; width:auto; margin-top:6px;" onclick="deleteHistory(${h.id})">削除</button>
+                        <div style="margin-top:6px; display:flex; gap:6px;">
+                            <button class="btn btn-warning" style="padding:4px 8px; font-size:12px; width:auto; margin:0;" onclick="editHistory(${h.id})">✏️ 編集</button>
+                            <button class="btn btn-danger" style="padding:4px 8px; font-size:12px; width:auto; margin:0;" onclick="deleteHistory(${h.id})">🗑️ 削除</button>
+                        </div>
                     </div>
                 `;
             });
