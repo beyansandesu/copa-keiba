@@ -262,7 +262,6 @@
             }
         }
 
-        // ★ 出走表一括取込処理（7列データ等に対応するよう最適化）
         function importBulk() {
             const text = document.getElementById("bulkInput").value.trim();
             if(!text){
@@ -276,7 +275,7 @@
             lines.forEach(line => {
                 if(!line.trim()) return;
                 const cols = line.split(",").map(c => c.trim());
-                if(cols.length < 5) return; // 5列未満はスキップ
+                if(cols.length < 5) return;
 
                 let frame = cols[0] || "";
                 let no = cols[1] || "";
@@ -287,13 +286,11 @@
                 let odds = "";
 
                 if (cols.length >= 7) {
-                    // 7列構成: 枠番, 馬番, 馬名, 脚質, 騎手, 斤量, オッズ
                     style = cols[3] || "先行";
                     jockey = cols[4] || "";
                     weight = cols[5] || "";
                     odds = cols[6] || "";
                 } else if (cols.length === 6) {
-                    // 6列構成: 枠番, 馬番, 馬名, 騎手, 斤量, オッズ
                     jockey = cols[3] || "";
                     weight = cols[4] || "";
                     odds = cols[5] || "";
@@ -554,7 +551,7 @@
 
             const favWinRate = ratedRacesCount > 0 ? ((h1 / ratedRacesCount) * 100).toFixed(1) : "0.0";
             const favQuinellaRate = ratedRacesCount > 0 ? (((h1 + h2) / ratedRacesCount) * 100).toFixed(1) : "0.0";
-            const favPlaceRate = ratedRacesCount > 0 ? ((h1 + h2 + h3) / ratedRacesCount) * 100).toFixed(1) : "0.0";
+            const favPlaceRate = ratedRacesCount > 0 ? (((h1 + h2 + h3) / ratedRacesCount) * 100).toFixed(1) : "0.0";
 
             document.getElementById("dashboardStats").innerHTML = `
                 <strong>総保存レース数：${totalRaces}レース</strong><br><br>
