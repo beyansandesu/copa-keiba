@@ -41,6 +41,19 @@
     .btn:hover {
       background-color: #218838;
     }
+    .btn-secondary {
+      background-color: #6c757d;
+      margin-left: 8px;
+    }
+    .btn-secondary:hover {
+      background-color: #5a6268;
+    }
+    .btn-danger {
+      background-color: #dc3545;
+    }
+    .btn-danger:hover {
+      background-color: #c82333;
+    }
     textarea, input[type="text"], select {
       width: 100%;
       border: 1px solid #ccc;
@@ -48,6 +61,11 @@
       padding: 8px;
       box-sizing: border-box;
       font-size: 13px;
+    }
+    .button-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
     }
   </style>
 </head>
@@ -75,12 +93,18 @@
       <textarea id="importTextData" rows="4" placeholder="開催日,競馬場,重賞レース名,距離,優勝馬&#10;2026-10-29,門別,エーデルワイス賞(中央交流),1200m,クラプロスパー"></textarea>
     </div>
     
-    <button class="btn" onclick="importBulkData()">一括データを取り込む</button>
+    <div class="button-group">
+      <button class="btn" onclick="importBulkData()">一括データを取り込む</button>
+      <button class="btn btn-secondary" onclick="clearInputForm()">入力クリア</button>
+    </div>
   </div>
 
   <!-- 成績ダッシュボード表示エリア -->
   <div class="card" id="dashboard">
-    <h3>📊 成績ダッシュボード</h3>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+      <h3 style="margin: 0;">📊 成績ダッシュボード</h3>
+      <button class="btn btn-danger" style="font-size: 12px; padding: 6px 12px;" onclick="clearAllData()">データを全消去（クリア）</button>
+    </div>
     <div id="dashboardContent">データを読み込み中...</div>
   </div>
 </div>
@@ -90,6 +114,21 @@
   document.addEventListener("DOMContentLoaded", () => {
     renderDashboard();
   });
+
+  // --- 入力フォームのクリア機能 ---
+  function clearInputForm() {
+    document.getElementById("csvFileInput").value = "";
+    document.getElementById("importTextData").value = "";
+  }
+
+  // --- 保存データの全消去（クリア）機能 ---
+  function clearAllData() {
+    if (confirm("保存されているすべてのレースデータを消去しますか？\n（※この操作は取り消せません）")) {
+      localStorage.removeItem("raceHistory");
+      renderDashboard();
+      alert("データをすべてクリアしました。");
+    }
+  }
 
   // --- CSV / テキスト一括インポート機能 ---
   async function importBulkData() {
@@ -116,7 +155,7 @@
       line = line.trim();
       if (!line) return;
 
-      // ヘッダー行（開催日,競馬場...）を自動スキップ
+      // ヘッダー行をスキップ
       if (line.includes("開催日") || line.includes("重賞レース名")) return;
 
       let date = "", venue = "", raceName = "", winner = "";
@@ -157,7 +196,7 @@
           investment: 0,
           payout: 0,
           result: winner ? `1着:${winner}` : "",
-          topHorse: winner, // 勝ち馬を本命馬としてセット
+          topHorse: winner,
           isSimulated: true
         };
 
@@ -173,13 +212,10 @@
     renderDashboard();
 
     alert(`全 ${addedCount} 件の重賞レースデータを取り込みました！`);
-    
-    // フォームリセット
-    if (fileInput) fileInput.value = "";
-    if (textInput) textInput.value = "";
+    clearInputForm();
   }
 
-  // --- ダッシュボード集計表示（エラー防止・安全対策済み） ---
+  // --- ダッシュボード集計表示 ---
   function renderDashboard() {
     const history = JSON.parse(localStorage.getItem("raceHistory") || "[]");
     const container = document.getElementById("dashboardContent");
@@ -198,7 +234,6 @@
       totalInvestment += Number(r.investment || 0);
       totalPayout += Number(r.payout || 0);
 
-      // result が undefined / null の場合でも safe に処理
       const resultStr = r.result || "";
       if (resultStr.includes("1着")) h1++;
       else if (resultStr.includes("2着")) h2++;
@@ -209,7 +244,6 @@
     const totalRaces = history.length;
     const ratedRacesCount = h1 + h2 + h3 + outOfPlacings;
 
-    // 勝率・連対率・複勝率の計算
     const winRate = ratedRacesCount > 0 ? ((h1 / ratedRacesCount) * 100).toFixed(1) : "0.0";
     const quinellaRate = ratedRacesCount > 0 ? (((h1 + h2) / ratedRacesCount) * 100).toFixed(1) : "0.0";
     const placeRate = ratedRacesCount > 0 ? (((h1 + h2 + h3) / ratedRacesCount) * 100).toFixed(1) : "0.0";
