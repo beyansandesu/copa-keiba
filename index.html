@@ -28,8 +28,25 @@
       margin-top: 0;
       color: #2c3e50;
     }
+    .form-group {
+      margin-bottom: 12px;
+    }
+    label {
+      font-size: 12px;
+      font-weight: bold;
+      display: block;
+      margin-bottom: 4px;
+    }
+    input[type="text"], input[type="number"], input[type="date"], select, textarea {
+      width: 100%;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 8px;
+      box-sizing: border-box;
+      font-size: 13px;
+    }
     .btn {
-      background-color: #28a745;
+      background-color: #007bff;
       color: white;
       border: none;
       padding: 10px 18px;
@@ -39,14 +56,13 @@
       font-size: 14px;
     }
     .btn:hover {
+      background-color: #0069d9;
+    }
+    .btn-success {
+      background-color: #28a745;
+    }
+    .btn-success:hover {
       background-color: #218838;
-    }
-    .btn-secondary {
-      background-color: #6c757d;
-      margin-left: 8px;
-    }
-    .btn-secondary:hover {
-      background-color: #5a6268;
     }
     .btn-danger {
       background-color: #dc3545;
@@ -54,18 +70,15 @@
     .btn-danger:hover {
       background-color: #c82333;
     }
-    textarea, input[type="text"], select {
-      width: 100%;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      padding: 8px;
-      box-sizing: border-box;
-      font-size: 13px;
-    }
-    .button-group {
-      display: flex;
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
       gap: 10px;
-      margin-top: 10px;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
     }
   </style>
 </head>
@@ -74,186 +87,240 @@
 <div class="container">
   <h2>🐎 Copa by競馬予想・収支管理 Ver2.1</h2>
 
-  <!-- CSV / テキスト一括取り込み機能カード -->
-  <div class="card">
-    <h3>📥 過去重賞データの一括取り込み</h3>
-    <p style="font-size: 12px; color: #666; margin-bottom: 12px;">
-      CSVファイルを直接選択するか、テキスト枠にデータを貼り付けて「一括データを取り込む」を押してください。
-    </p>
-    
-    <!-- ① CSVファイル選択 -->
-    <div style="margin-bottom: 12px;">
-      <label style="font-size: 12px; font-weight: bold; display: block; margin-bottom: 4px;">CSVファイルを選択：</label>
-      <input type="file" id="csvFileInput" accept=".csv, .txt">
-    </div>
-
-    <!-- ② テキスト直接貼り付けエリア -->
-    <div style="margin-bottom: 12px;">
-      <label style="font-size: 12px; font-weight: bold; display: block; margin-bottom: 4px;">またはテキストを直接貼り付け：</label>
-      <textarea id="importTextData" rows="4" placeholder="開催日,競馬場,重賞レース名,距離,優勝馬&#10;2026-10-29,門別,エーデルワイス賞(中央交流),1200m,クラプロスパー"></textarea>
-    </div>
-    
-    <div class="button-group">
-      <button class="btn" onclick="importBulkData()">一括データを取り込む</button>
-      <button class="btn btn-secondary" onclick="clearInputForm()">入力クリア</button>
-    </div>
-  </div>
-
-  <!-- 成績ダッシュボード表示エリア -->
+  <!-- ① 成績ダッシュボード（ユーザーの実戦データのみ集計） -->
   <div class="card" id="dashboard">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-      <h3 style="margin: 0;">📊 成績ダッシュボード</h3>
-      <button class="btn btn-danger" style="font-size: 12px; padding: 6px 12px;" onclick="clearAllData()">データを全消去（クリア）</button>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+      <h3 style="margin: 0;">📊 自分の予想・収支ダッシュボード</h3>
+      <button class="btn btn-danger" style="font-size: 11px; padding: 4px 8px;" onclick="clearUserDataOnly()">自分の予想履歴のみリセット</button>
     </div>
     <div id="dashboardContent">データを読み込み中...</div>
+  </div>
+
+  <!-- ② 通常の予想・レース結果 入力フォーム -->
+  <div class="card">
+    <h3>📝 予想・購入レースの登録</h3>
+    <form id="raceForm" onsubmit="saveUserRace(event)">
+      <div class="grid-3">
+        <div class="form-group">
+          <label>日付：</label>
+          <input type="date" id="raceDate" required>
+        </div>
+        <div class="form-group">
+          <label>競馬場：</label>
+          <input type="text" id="raceVenue" placeholder="例: 門別" required>
+        </div>
+        <div class="form-group">
+          <label>レース名 / R：</label>
+          <input type="text" id="raceName" placeholder="例: 11R 瑞穂賞" required>
+        </div>
+      </div>
+
+      <div class="grid-3">
+        <div class="form-group">
+          <label>本命馬（総合1位）：</label>
+          <input type="text" id="topHorse" placeholder="例: ベルピット" required>
+        </div>
+        <div class="form-group">
+          <label>着順結果：</label>
+          <select id="raceResult">
+            <label>1着</label><option value="1着">1着</option>
+            <option value="2着">2着</option>
+            <option value="3着">3着</option>
+            <option value="着外">着外</option>
+            <option value="見（ケン）">見（ケン）</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>トラックバイアス：</label>
+          <select id="trackBias">
+            <option value="内前有利">内前有利</option>
+            <option value="外差し有利">外差し有利</option>
+            <option value="フラット">フラット</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="form-group">
+          <label>投資額 (円)：</label>
+          <input type="number" id="investment" value="0" min="0">
+        </div>
+        <div class="form-group">
+          <label>払戻額 (円)：</label>
+          <input type="number" id="payout" value="0" min="0">
+        </div>
+      </div>
+
+      <button type="submit" class="btn" style="width: 100%; margin-top: 5px;">予想・結果を保存する</button>
+    </form>
+  </div>
+
+  <!-- ③ バックグラウンド過去データ一括インポート -->
+  <div class="card" style="background: #fafafa;">
+    <h3>📥 分析用 過去重賞データの取り込み</h3>
+    <p style="font-size: 11px; color: #666; margin-bottom: 8px;">
+      ※ここに読み込んだデータは将来の分析用ベースとして保持され、上のダッシュボード成績には影響しません。
+    </p>
+    
+    <div style="margin-bottom: 8px;">
+      <input type="file" id="csvFileInput" accept=".csv, .txt">
+    </div>
+    <div style="margin-bottom: 8px;">
+      <textarea id="importTextData" rows="2" placeholder="CSVまたはテキストデータ"></textarea>
+    </div>
+    
+    <button class="btn btn-success" style="font-size: 12px; padding: 6px 12px;" onclick="importBulkData()">過去重賞データを取り込む</button>
+    <span id="importStatus" style="font-size: 12px; color: #28a745; margin-left: 10px;"></span>
   </div>
 </div>
 
 <script>
-  // --- アプリの初期化 ---
   document.addEventListener("DOMContentLoaded", () => {
+    // 今日の日付を初期値にセット
+    document.getElementById("raceDate").value = new Date().toISOString().split('T')[0];
     renderDashboard();
   });
 
-  // --- 入力フォームのクリア機能 ---
-  function clearInputForm() {
-    document.getElementById("csvFileInput").value = "";
-    document.getElementById("importTextData").value = "";
+  // --- 自分の予想レースを登録 ---
+  function saveUserRace(e) {
+    e.preventDefault();
+
+    const newRecord = {
+      id: Date.now(),
+      date: document.getElementById("raceDate").value,
+      venue: document.getElementById("raceVenue").value,
+      raceName: document.getElementById("raceName").value,
+      topHorse: document.getElementById("topHorse").value,
+      result: document.getElementById("raceResult").value,
+      bias: document.getElementById("trackBias").value,
+      investment: Number(document.getElementById("investment").value || 0),
+      payout: Number(document.getElementById("payout").value || 0),
+      isImported: false // ユーザー自身のデータフラグ
+    };
+
+    let history = JSON.parse(localStorage.getItem("raceHistory") || "[]");
+    history.push(newRecord);
+    localStorage.setItem("raceHistory", JSON.stringify(history));
+
+    // フォームリセット
+    document.getElementById("raceVenue").value = "";
+    document.getElementById("raceName").value = "";
+    document.getElementById("topHorse").value = "";
+    document.getElementById("investment").value = "0";
+    document.getElementById("payout").value = "0";
+
+    renderDashboard();
+    alert("予想データを登録しました！");
   }
 
-  // --- 保存データの全消去（クリア）機能 ---
-  function clearAllData() {
-    if (confirm("保存されているすべてのレースデータを消去しますか？\n（※この操作は取り消せません）")) {
-      localStorage.removeItem("raceHistory");
+  // --- 自分の予想履歴のみリセット ---
+  function clearUserDataOnly() {
+    if (confirm("自分の予想・購入履歴のみをクリアしますか？\n（取り込んだ過去重賞データは保持されます）")) {
+      let history = JSON.parse(localStorage.getItem("raceHistory") || "[]");
+      // インポートデータ（isImported: true）だけ残す
+      history = history.filter(r => r.isImported === true);
+      localStorage.setItem("raceHistory", JSON.stringify(history));
       renderDashboard();
-      alert("データをすべてクリアしました。");
+      alert("自分の予想履歴をクリアしました。");
     }
   }
 
-  // --- CSV / テキスト一括インポート機能 ---
+  // --- 過去データの一括取り込み（分析用フラグをつけて保存） ---
   async function importBulkData() {
     const fileInput = document.getElementById("csvFileInput");
     const textInput = document.getElementById("importTextData");
     let content = "";
 
-    // ファイル選択がある場合は優先して読み込み
     if (fileInput && fileInput.files.length > 0) {
-      const file = fileInput.files[0];
-      content = await file.text();
+      content = await fileInput.files[0].text();
     } else if (textInput && textInput.value.trim() !== "") {
       content = textInput.value.trim();
     } else {
-      alert("CSVファイルを選択するか、テキスト枠にデータを入力してください。");
+      alert("CSVファイルを選択するかテキストを入力してください。");
       return;
     }
 
-    let savedHistory = JSON.parse(localStorage.getItem("raceHistory") || "[]");
+    let history = JSON.parse(localStorage.getItem("raceHistory") || "[]");
     const lines = content.split("\n");
-    let addedCount = 0;
+    let count = 0;
 
     lines.forEach(line => {
       line = line.trim();
-      if (!line) return;
+      if (!line || line.includes("開催日") || line.includes("重賞レース名")) return;
 
-      // ヘッダー行をスキップ
-      if (line.includes("開催日") || line.includes("重賞レース名")) return;
-
-      let date = "", venue = "", raceName = "", winner = "";
-
-      // CSV形式（カンマ区切り）の解析
       if (line.includes(",")) {
         const parts = line.split(",").map(p => p.trim());
-        date = parts[0] || "2026-01-01";
-        venue = parts[1] || "";
-        raceName = parts[2] || "重賞";
-        winner = parts[4] || parts[3] || ""; // 5列目の優勝馬を取得
-      } 
-      // 【10.29 門別】形式の解析
-      else if (line.includes("【") && line.includes("】")) {
-        const headerMatch = line.match(/【(.*?)】/);
-        if (headerMatch) {
-          const headerParts = headerMatch[1].split(" ");
-          date = headerParts[0] || "";
-          venue = headerParts[1] || "";
-        }
-        const rest = line.replace(/【.*?】/, "").trim();
-        if (rest.includes("➔")) {
-          const raceAndWinner = rest.split("➔");
-          raceName = raceAndWinner[0].trim();
-          const winnerMatch = raceAndWinner[1].match(/1着[：:](.*)/);
-          winner = winnerMatch ? winnerMatch[1].trim() : "";
-        }
-      }
-
-      if (venue && raceName) {
-        const newRaceRecord = {
+        const winner = parts[4] || parts[3] || "";
+        history.push({
           id: Date.now() + Math.random(),
-          date: date,
-          venue: venue,
-          raceName: raceName,
-          bias: "フラット",
-          trackCondition: "良",
+          date: parts[0] || "",
+          venue: parts[1] || "",
+          raceName: parts[2] || "重賞",
+          topHorse: winner,
+          result: `1着:${winner}`,
           investment: 0,
           payout: 0,
-          result: winner ? `1着:${winner}` : "",
-          topHorse: winner,
-          isSimulated: true
-        };
-
-        savedHistory.push(newRaceRecord);
-        addedCount++;
+          isImported: true // 分析用取り込みデータフラグ
+        });
+        count++;
       }
     });
 
-    // ストレージに保存
-    localStorage.setItem("raceHistory", JSON.stringify(savedHistory));
-
-    // ダッシュボード更新
-    renderDashboard();
-
-    alert(`全 ${addedCount} 件の重賞レースデータを取り込みました！`);
-    clearInputForm();
+    localStorage.setItem("raceHistory", JSON.stringify(history));
+    document.getElementById("importStatus").innerText = `※ 過去重賞 ${count} 件を分析用DBに登録済み`;
+    
+    if (fileInput) fileInput.value = "";
+    if (textInput) textInput.value = "";
+    alert(`過去重賞データ ${count} 件を取り込みました。（ダッシュボード成績には影響しません）`);
   }
 
-  // --- ダッシュボード集計表示 ---
+  // --- ダッシュボード集計（自分の予想データのみ集計） ---
   function renderDashboard() {
     const history = JSON.parse(localStorage.getItem("raceHistory") || "[]");
     const container = document.getElementById("dashboardContent");
 
-    if (!container) return;
+    // 自分の予想データ（isImported が false または 未定義のもの）だけを抽出
+    const userHistory = history.filter(r => !r.isImported);
 
-    if (history.length === 0) {
-      container.innerHTML = "<p style='color:#888;'>保存されたレースデータがありません。</p>";
+    // インポート済みの件数もカウント
+    const importedCount = history.filter(r => r.isImported).length;
+    const statusText = importedCount > 0 ? `（分析用重賞データ ${importedCount} 件保持中）` : "";
+
+    if (userHistory.length === 0) {
+      container.innerHTML = `<p style='color:#888;'>登録された自分の予想データがありません。<br><span style='font-size:11px; color:#aaa;'>${statusText}</span></p>`;
       return;
     }
 
-    let h1 = 0, h2 = 0, h3 = 0, outOfPlacings = 0;
+    let h1 = 0, h2 = 0, h3 = 0, outOfPlacings = 0, kenCount = 0;
     let totalInvestment = 0, totalPayout = 0;
 
-    history.forEach(r => {
+    userHistory.forEach(r => {
       totalInvestment += Number(r.investment || 0);
       totalPayout += Number(r.payout || 0);
 
-      const resultStr = r.result || "";
-      if (resultStr.includes("1着")) h1++;
-      else if (resultStr.includes("2着")) h2++;
-      else if (resultStr.includes("3着")) h3++;
-      else if (resultStr) outOfPlacings++;
+      const res = r.result || "";
+      if (res === "見（ケン）" || r.investment === 0 && r.payout === 0 && !res.includes("着")) {
+        kenCount++;
+      } else if (res.includes("1着")) h1++;
+      else if (res.includes("2着")) h2++;
+      else if (res.includes("3着")) h3++;
+      else outOfPlacings++;
     });
 
-    const totalRaces = history.length;
-    const ratedRacesCount = h1 + h2 + h3 + outOfPlacings;
+    const totalRaces = userHistory.length;
+    const ratedRacesCount = h1 + h2 + h3 + outOfPlacings; // 見レースを除いた集計対象数
 
     const winRate = ratedRacesCount > 0 ? ((h1 / ratedRacesCount) * 100).toFixed(1) : "0.0";
     const quinellaRate = ratedRacesCount > 0 ? (((h1 + h2) / ratedRacesCount) * 100).toFixed(1) : "0.0";
     const placeRate = ratedRacesCount > 0 ? (((h1 + h2 + h3) / ratedRacesCount) * 100).toFixed(1) : "0.0";
+    const recoveryRate = totalInvestment > 0 ? ((totalPayout / totalInvestment) * 100).toFixed(1) : "0.0";
 
     container.innerHTML = `
-      <p><strong>総データ数：</strong> ${totalRaces} レース</p>
-      <p><strong>本命勝率：</strong> ${winRate}% （1着 ${h1}回）</p>
-      <p><strong>本命連対率：</strong> ${quinellaRate}% （1〜2着 ${h1 + h2}回）</p>
-      <p><strong>本命複勝率：</strong> ${placeRate}% （1〜3着 ${h1 + h2 + h3}回）</p>
-      <p><strong>通算収支：</strong> 投資 ${totalInvestment.toLocaleString()}円 / 払戻 ${totalPayout.toLocaleString()}円</p>
+      <p style="margin: 4px 0;"><strong>自分の予想レース数：</strong> ${totalRaces} レース （内、見レース: ${kenCount} 件） <span style="font-size:11px; color:#666;">${statusText}</span></p>
+      <p style="margin: 4px 0;"><strong>本命勝率：</strong> ${winRate}% （1着 ${h1}回）</p>
+      <p style="margin: 4px 0;"><strong>本命連対率：</strong> ${quinellaRate}% （1〜2着 ${h1 + h2}回）</p>
+      <p style="margin: 4px 0;"><strong>本命複勝率：</strong> ${placeRate}% （1〜3着 ${h1 + h2 + h3}回）</p>
+      <p style="margin: 4px 0;"><strong>通算収支：</strong> 投資 ${totalInvestment.toLocaleString()}円 / 払戻 ${totalPayout.toLocaleString()}円 （回収率: <strong>${recoveryRate}%</strong>）</p>
     `;
   }
 </script>
