@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Copa by地方競馬 予想・収支管理アプリ Ver2.1</title>
+    <title>地方競馬 予想・収支管理アプリ Ver2.1</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -92,7 +92,7 @@
 </head>
 <body>
 
-    <h1>🐎 Copa by地方競馬 予想・収支管理 (Ver2.1)</h1>
+    <h1>🐎 地方競馬 予想・収支管理 (Ver2.1)</h1>
 
     <!-- 今日の印・要約 -->
     <div class="card">
@@ -247,7 +247,6 @@
         let horses = [];
         let raceHistories = JSON.parse(localStorage.getItem("raceHistories")) || [];
 
-        // 初期読み込み
         window.onload = function() {
             loadSavedData();
             renderDashboard();
@@ -265,7 +264,6 @@
             }
         }
 
-        // 出走表一括取込処理
         function importBulk() {
             const text = document.getElementById("bulkInput").value.trim();
             if(!text){
@@ -369,7 +367,6 @@
 
         function renderList() {
             const ranking = getCalculatedRanking();
-            
             const markSymbol = ["◎","○","▲","△","×"];
             const marks = [];
             ranking.forEach((horse, index) => {
@@ -405,7 +402,6 @@
             return total;
         }
 
-        // ユーザーの予想レース保存
         function saveRaceHistory() {
             const track = document.getElementById("trackSelect").value;
             const raceNo = document.getElementById("raceNoSelect").value;
@@ -428,7 +424,6 @@
 
             const ranking = getCalculatedRanking();
             const favoriteName = ranking.length > 0 ? ranking[0].name : "";
-
             const today = new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' });
 
             const historyData = {
@@ -444,7 +439,7 @@
                 payout: payout,
                 income: payout - investment,
                 results: [r1, r2, r3, r4, r5],
-                isImported: false // ユーザーの予想データ
+                isImported: false
             };
 
             raceHistories.unshift(historyData);
@@ -473,7 +468,7 @@
             }
         }
 
-        // 分析用過去重賞データの一括取込処理
+        // 過去重賞データ一括取込（ファイル選択＆テキスト直貼り付け両対応・安全版）
         async function importBulkGradedRaces() {
             const fileInput = document.getElementById("csvFileInput");
             const textInput = document.getElementById("importTextData");
@@ -484,7 +479,7 @@
             } else if (textInput && textInput.value.trim() !== "") {
                 content = textInput.value.trim();
             } else {
-                alert("CSVファイルを選択するかテキストを入力してください。");
+                alert("CSVファイルを選択するか、テキスト枠にデータを貼り付けてください。");
                 return;
             }
 
@@ -515,7 +510,7 @@
                         payout: 0,
                         income: 0,
                         results: [winner, "", "", "", ""],
-                        isImported: true // 分析用データフラグ
+                        isImported: true
                     };
                     raceHistories.push(gradedRecord);
                     count++;
@@ -528,10 +523,9 @@
 
             renderDashboard();
             document.getElementById("importStatus").innerText = `※ 過去重賞 ${count} 件を分析用DBに登録しました`;
-            alert(`過去重賞データ ${count} 件を分析用データベースに登録しました！（ご自身の成績には影響しません）`);
+            alert(`過去重賞データ ${count} 件を分析用データベースに登録しました！`);
         }
 
-        // 自分の予想データのみリセット
         function clearUserDataOnly() {
             if (confirm("ご自身の予想・購入履歴のみをクリアしますか？\n（取り込んだ分析用過去データは保持されます）")) {
                 raceHistories = raceHistories.filter(h => h.isImported === true);
@@ -541,7 +535,6 @@
             }
         }
 
-        // 分析用データのみ削除
         function clearImportedDataOnly() {
             if (confirm("取り込んだ分析用の過去重賞データを削除しますか？")) {
                 raceHistories = raceHistories.filter(h => !h.isImported);
@@ -552,7 +545,6 @@
             }
         }
 
-        // JSONバックアップ書き出し機能
         function exportData() {
             const dataObj = {
                 raceHistories: raceHistories,
@@ -567,7 +559,6 @@
             downloadAnchor.remove();
         }
 
-        // JSONバックアップ読み込み・復元機能
         function importData(event) {
             const file = event.target.files[0];
             if(!file) return;
@@ -594,7 +585,6 @@
             event.target.value = "";
         }
 
-        // ダッシュボード描画（ユーザーの実戦データのみで集計）
         function renderDashboard() {
             const userHistories = raceHistories.filter(h => !h.isImported);
             const importedCount = raceHistories.filter(h => h.isImported).length;
@@ -635,7 +625,7 @@
 
             const favWinRate = ratedRacesCount > 0 ? ((h1 / ratedRacesCount) * 100).toFixed(1) : "0.0";
             const favQuinellaRate = ratedRacesCount > 0 ? (((h1 + h2) / ratedRacesCount) * 100).toFixed(1) : "0.0";
-            const favPlaceRate = ratedRacesCount > 0 ? ((h1 + h2 + h3) / ratedRacesCount) * 100).toFixed(1) : "0.0";
+            const favPlaceRate = ratedRacesCount > 0 ? (((h1 + h2 + h3) / ratedRacesCount) * 100).toFixed(1) : "0.0";
 
             const importNote = importedCount > 0 ? `<br><span style="font-size:12px; color:#28a745;">💡 分析用データベース：地方重賞データ ${importedCount} 件蓄積中</span>` : "";
 
