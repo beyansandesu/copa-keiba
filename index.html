@@ -113,7 +113,7 @@
     <div class="card">
         <h3>📥 出走表一括取込</h3>
         <p style="font-size: 12px; color: #666;">形式：枠番,馬番,馬名,脚質,騎手,斤量,オッズ</p>
-        <textarea id="bulkInput" rows="5" placeholder="1,1,コンテミュール,先行,横山武,55.0,10.0&#10;2,2,エイシンスクルド,先行,武内勇,55.0,10.0"></textarea>
+        <textarea id="bulkInput" rows="5" placeholder="1,1,ワンダーエクセレント,先行,廣瀬航,56.0,3.2"></textarea>
         <button class="btn" onclick="importBulk()">一括取込実行</button>
         <button class="btn btn-danger" onclick="clearAllHorses()" style="margin-top:8px;">🗑️ 登録馬をすべてクリア</button>
     </div>
@@ -243,7 +243,7 @@
     <script>
         let horses = [];
         let raceHistories = JSON.parse(localStorage.getItem("raceHistories")) || [];
-        let isHistoryOpen = false; // 履歴を開いているかどうかのフラグ
+        let isHistoryOpen = false;
 
         window.onload = function() {
             loadSavedData();
@@ -262,6 +262,7 @@
             }
         }
 
+        // ★ 出走表一括取込処理（7列データ等に対応するよう最適化）
         function importBulk() {
             const text = document.getElementById("bulkInput").value.trim();
             if(!text){
@@ -275,30 +276,27 @@
             lines.forEach(line => {
                 if(!line.trim()) return;
                 const cols = line.split(",").map(c => c.trim());
-                if(cols.length < 6) return;
+                if(cols.length < 5) return; // 5列未満はスキップ
 
-                let frame = cols[0];
-                let no = cols[1];
-                let name = cols[2];
+                let frame = cols[0] || "";
+                let no = cols[1] || "";
+                let name = cols[2] || "";
                 let style = "先行";
                 let jockey = "";
                 let weight = "";
                 let odds = "";
 
-                if(cols.length === 7){
+                if (cols.length >= 7) {
+                    // 7列構成: 枠番, 馬番, 馬名, 脚質, 騎手, 斤量, オッズ
                     style = cols[3] || "先行";
-                    jockey = cols[4];
-                    weight = cols[5];
-                    odds = cols[6];
-                } else if(cols.length === 6){
-                    jockey = cols[3];
-                    weight = cols[4];
-                    odds = cols[5];
-                } else if(cols.length >= 8){
-                    style = (cols[3] && cols[3] !== "-") ? cols[3] : "先行";
-                    jockey = cols[4];
-                    weight = cols[5];
-                    odds = cols[6];
+                    jockey = cols[4] || "";
+                    weight = cols[5] || "";
+                    odds = cols[6] || "";
+                } else if (cols.length === 6) {
+                    // 6列構成: 枠番, 馬番, 馬名, 騎手, 斤量, オッズ
+                    jockey = cols[3] || "";
+                    weight = cols[4] || "";
+                    odds = cols[5] || "";
                 }
 
                 horses.push({
@@ -497,7 +495,7 @@
                 try {
                     const parsed = JSON.parse(e.target.result);
                     if(parsed.raceHistories && Array.isArray(parsed.raceHistories)) {
-                        if(confirm(`バックアップファイルから ${parsed.raceHistories.length} 件のレース履歴を読みます。現在のデータに上書き・統合しますか？`)) {
+                        if(confirm(`バックアップファイルから ${parsed.raceHistories.length} 件のレース履歴を読み込みます。現在のデータに上書き・統合しますか？`)) {
                             raceHistories = parsed.raceHistories;
                             localStorage.setItem("raceHistories", JSON.stringify(raceHistories));
                             renderDashboard();
@@ -514,7 +512,6 @@
             event.target.value = "";
         }
 
-        // 履歴の開閉を切り替える関数
         function toggleHistoryOpen() {
             isHistoryOpen = !isHistoryOpen;
             renderDashboard();
@@ -573,7 +570,6 @@
                 <span style="font-size:12px; color:#666;">（内訳：1着:${h1}回 ／ 2着:${h2}回 ／ 3着:${h3}回 ／ 着外:${hOut}回）</span>
             `;
 
-            // 表示する履歴の絞り込み（開いていなければ先頭3件のみ）
             const displayList = isHistoryOpen ? raceHistories : raceHistories.slice(0, 3);
 
             let hHtml = "";
@@ -595,7 +591,6 @@
             });
             document.getElementById("historyList").innerHTML = hHtml || "保存された履歴はありません";
 
-            // 4件以上データがある場合のみ「過去の履歴を見る」ボタンを表示
             const toggleContainer = document.getElementById("toggleHistoryContainer");
             const toggleBtn = document.getElementById("toggleBtn");
             if (raceHistories.length > 3) {
