@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Copa by地方競馬 予想・収支管理アプリ Ver2.1</title>
+    <title>Copa by地方競馬 予想・収支管理アプリ Ver2.2</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -13,9 +13,7 @@
             background-color: #f5f5f7;
             color: #333;
         }
-        h1, h2, h3 {
-            color: #1d1d1f;
-        }
+        h1, h2, h3 { color: #1d1d1f; }
         .card {
             background: white;
             border-radius: 12px;
@@ -88,6 +86,11 @@
             background: #eee;
             margin-right: 4px;
         }
+        .tag-winner {
+            background: #ffcc00;
+            color: #000;
+            font-weight: bold;
+        }
         .history-item {
             border-bottom: 1px solid #eee;
             padding: 12px 0;
@@ -101,7 +104,7 @@
 </head>
 <body>
 
-    <h1>🐎 Copa by地方競馬 予想・収支管理 (Ver2.1)</h1>
+    <h1>🐎 Copa by地方競馬 予想・収支管理 (Ver2.2)</h1>
 
     <!-- 今日の印・要約 -->
     <div class="card">
@@ -222,21 +225,26 @@
 
     <!-- データバックアップ・管理 -->
     <div class="card">
-        <h3>💾 データバックアップ・管理</h3>
-        <p style="font-size: 12px; color: #666;">ブラウザのデータ消失対策として、定期的にバックアップを保存することをおすすめします。</p>
+        <h3>💾 データバックアップ・マスター管理</h3>
+        <p style="font-size: 12px; color: #666;">収支データのバックアップや、予想ロジック用「重賞勝ち馬データ(CSV)」の登録が行えます。</p>
         <div class="flex-group">
-            <button class="btn btn-secondary" onclick="exportData()" style="margin-top:4px;">📤 バックアップを保存 (JSON)</button>
-            <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()" style="margin-top:4px;">📥 復元 (ファイル選択)</button>
+            <button class="btn btn-secondary" onclick="exportData()" style="margin-top:4px;">📤 バックアップ保存(JSON)</button>
+            <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()" style="margin-top:4px;">📥 復元(JSON選択)</button>
+        </div>
+        <div style="margin-top:10px; border-top:1px dashed #ccc; padding-top:8px;">
+            <button class="btn btn-warning" onclick="document.getElementById('importCsvFile').click()" style="margin-top:4px;">🏆 重賞勝ち馬CSVを取込 (予想用)</button>
+            <input type="file" id="importCsvFile" style="display:none" accept=".csv" onchange="importGradeWinnersCsv(event)">
+            <p id="winnerCountInfo" style="font-size: 12px; color: #0071e3; margin-top:4px; font-weight:bold;"></p>
         </div>
         <input type="file" id="importFile" style="display:none" accept=".json" onchange="importData(event)">
     </div>
 
-    <!-- ダッシュボード＆履歴（折りたたみ対応） -->
+    <!-- ダッシュボード＆履歴 -->
     <div class="card">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
             <h2 style="margin:0;">📊 地方競馬 成績・収支ダッシュボード</h2>
             <div style="display: flex; gap: 6px;">
-                <button class="btn btn-warning" style="width: auto; padding: 6px 12px; font-size: 12px; margin-top:0;" onclick="cleanImportedDataOnly()">🧹 過去データのみ自動削除</button>
+                <button class="btn btn-warning" style="width: auto; padding: 6px 12px; font-size: 12px; margin-top:0;" onclick="cleanImportedDataOnly()">🧹 過去重賞データを分離</button>
                 <button class="btn btn-danger" style="width: auto; padding: 6px 12px; font-size: 12px; margin-top:0;" onclick="clearUserDataOnly()">全リセット</button>
             </div>
         </div>
@@ -252,11 +260,13 @@
     <script>
         let horses = [];
         let raceHistories = JSON.parse(localStorage.getItem("raceHistories")) || [];
+        let gradeWinners = JSON.parse(localStorage.getItem("gradeWinners")) || [];
         let isHistoryOpen = false;
 
         window.onload = function() {
             loadSavedData();
             renderDashboard();
+            updateWinnerCountInfo();
         };
 
         function saveData() {
@@ -268,6 +278,13 @@
             if (saved) {
                 horses = JSON.parse(saved);
                 renderList();
+            }
+        }
+
+        function updateWinnerCountInfo() {
+            const info = document.getElementById("winnerCountInfo");
+            if (info) {
+                info.innerText = `現在登録済みの重賞勝ち馬マスター: ${gradeWinners.length} 馬`;
             }
         }
 
@@ -363,7 +380,13 @@
                 if(h.style === "先行") pt += 10;
                 if(h.style === "差し") pt += 5;
 
-                return { ...h, point: pt };
+                // ★ 重賞勝ち馬マスターとの自動連携ロジック
+                const isGradeWinner = gradeWinners.some(w => w.name && w.name.trim() === h.name.trim());
+                if (isGradeWinner) {
+                    pt += 10; // 重賞勝利実績ボーナス +10pt
+                }
+
+                return { ...h, point: pt, isGradeWinner: isGradeWinner };
             }).sort((a, b) => b.point - a.point);
         }
 
@@ -379,9 +402,10 @@
 
             let html = "";
             ranking.forEach((h, idx) => {
+                const winnerTag = h.isGradeWinner ? `<span class="tag tag-winner">🏆 重賞勝ち馬</span>` : "";
                 html += `
                     <div class="horse-card">
-                        <strong>${idx + 1}位 ${h.frame}枠${h.no}番 ${h.name}</strong>（${h.jockey} / ${h.style}）<br>
+                        <strong>${idx + 1}位 ${h.frame}枠${h.no}番 ${h.name}</strong>（${h.jockey} / ${h.style}） ${winnerTag}<br>
                         <span class="tag">オッズ: ${h.odds}</span>
                         <span class="tag">ランク: ${h.rank}</span>
                         <span class="tag">期待値: ${h.value}</span>
@@ -535,29 +559,86 @@
             }
         }
 
-        // ★ 実戦（購入）データだけを残し、過去インポートデータだけを自動削除する処理
+        // ★ 購入データ（買い目・投資・払戻あり）だけを残し、インポートデータを過去マスター側へ移行・分離するボタン
         function cleanImportedDataOnly() {
             const beforeCount = raceHistories.length;
-            // 買い目がある、または投資・払戻金が発生している実戦データだけを残す
-            const realData = raceHistories.filter(h => {
+
+            const realData = [];
+            const winnersExtracted = [];
+
+            raceHistories.forEach(h => {
                 const hasBets = h.betsText && h.betsText.trim() !== "";
                 const hasMoney = (h.investment > 0) || (h.payout > 0);
-                return hasBets || hasMoney;
+
+                if (hasBets || hasMoney) {
+                    realData.push(h); // 実戦購入データとして保持
+                } else {
+                    // 1着馬が入っている場合は重賞マスターとして抽出
+                    if (h.results && h.results[0] && h.results[0].trim() !== "") {
+                        winnersExtracted.push({ name: h.results[0].trim(), race: h.raceName });
+                    }
+                }
             });
 
             const deletedCount = beforeCount - realData.length;
 
             if (deletedCount === 0) {
-                alert("削除対象となる過去インポートデータは見つかりませんでした。（すべてのデータに買い目または購入情報が入っています）");
+                alert("分離対象となるデータは見つかりませんでした。（すべての履歴に買い目または購入情報が入っています）");
                 return;
             }
 
-            if (confirm(`買い目や収支の入っていない過去データ ${deletedCount} 件を削除し、実戦購入データ ${realData.length} 件のみを残しますか？`)) {
+            if (confirm(`買い目・購入金額の入っていない ${deletedCount} 件のデータを収支集計から外し、実戦データ ${realData.length} 件のみ残しますか？\n（抽出された勝ち馬情報は予想ロジック用マスターに保存されます）`)) {
                 raceHistories = realData;
                 localStorage.setItem("raceHistories", JSON.stringify(raceHistories));
+
+                // 勝ち馬マスターに統合保存
+                winnersExtracted.forEach(w => {
+                    if (!gradeWinners.some(g => g.name === w.name)) {
+                        gradeWinners.push(w);
+                    }
+                });
+                localStorage.setItem("gradeWinners", JSON.stringify(gradeWinners));
+
                 renderDashboard();
-                alert(`過去データ ${deletedCount} 件の削除が完了しました！実戦データのみ正しく集計されます。`);
+                updateWinnerCountInfo();
+                renderList();
+                alert(`ダッシュボードのクレンジングが完了しました！\n実戦データ: ${realData.length}件\n予想用重賞マスター: ${gradeWinners.length}馬`);
             }
+        }
+
+        // ★ CSVから重賞勝ち馬マスターを一括取込
+        function importGradeWinnersCsv(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const lines = e.target.result.split(/\r\n|\n/);
+                let addCount = 0;
+
+                lines.forEach((line, index) => {
+                    if (!line.trim() || index === 0 && line.includes("開催日")) return; // ヘッダー行スキップ
+                    const cols = line.split(",").map(c => c.trim().replace(/^"|"$/g, ''));
+                    
+                    // 開催日, 競馬場, 重賞レース名, 距離, 優勝馬
+                    const winnerName = cols[4] || cols[cols.length - 1]; // 最後の列または5列目
+                    const raceName = cols[2] || "";
+
+                    if (winnerName) {
+                        if (!gradeWinners.some(w => w.name === winnerName)) {
+                            gradeWinners.push({ name: winnerName, race: raceName });
+                            addCount++;
+                        }
+                    }
+                });
+
+                localStorage.setItem("gradeWinners", JSON.stringify(gradeWinners));
+                updateWinnerCountInfo();
+                renderList();
+                alert(`${addCount} 頭の重賞勝ち馬データを予想用マスターに追加しました！`);
+            };
+            reader.readAsText(file);
+            event.target.value = "";
         }
 
         function clearUserDataOnly() {
@@ -572,6 +653,7 @@
         function exportData() {
             const dataObj = {
                 raceHistories: raceHistories,
+                gradeWinners: gradeWinners,
                 exportDate: new Date().toISOString()
             };
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dataObj, null, 2));
@@ -592,10 +674,14 @@
                 try {
                     const parsed = JSON.parse(e.target.result);
                     if(parsed.raceHistories && Array.isArray(parsed.raceHistories)) {
-                        if(confirm(`バックアップファイルから ${parsed.raceHistories.length} 件のレース履歴を読み込みます。現在のデータに上書き・統合しますか？`)) {
+                        if(confirm(`バックアップファイルからデータを読み込みます。`)) {
                             raceHistories = parsed.raceHistories;
+                            if (parsed.gradeWinners) gradeWinners = parsed.gradeWinners;
                             localStorage.setItem("raceHistories", JSON.stringify(raceHistories));
+                            localStorage.setItem("gradeWinners", JSON.stringify(gradeWinners));
                             renderDashboard();
+                            updateWinnerCountInfo();
+                            renderList();
                             alert("データの復元が完了しました！");
                         }
                     } else {
