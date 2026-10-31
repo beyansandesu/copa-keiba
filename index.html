@@ -191,7 +191,9 @@
                 <label style="font-weight:bold; font-size:12px;">トラックバイアス</label>
                 <select id="bias">
                     <option value="内前有利" selected>内前有利</option>
+                    <option value="内差し有利">内差し有利</option>
                     <option value="フラット">フラット</option>
+                    <option value="外前有利">外前有利</option>
                     <option value="外差し有利">外差し有利</option>
                 </select>
             </div>
@@ -426,7 +428,6 @@
             const editingId = document.getElementById("editingId").value;
 
             if (editingId) {
-                // 既存データの更新（編集モード）
                 const index = raceHistories.findIndex(h => h.id == editingId);
                 if (index !== -1) {
                     raceHistories[index] = {
@@ -445,7 +446,6 @@
                 alert("レース履歴を更新しました！");
                 cancelEdit();
             } else {
-                // 新規保存
                 const historyData = {
                     id: Date.now(),
                     date: today,
@@ -469,12 +469,10 @@
             renderDashboard();
         }
 
-        // 編集ボタンを押したときの処理
         function editHistory(id) {
             const h = raceHistories.find(item => item.id == id);
             if (!h) return;
 
-            // レース名から競馬場名とレース番号をパース（例：「大井11レース」）
             for (let opt of document.getElementById("trackSelect").options) {
                 if (h.raceName.startsWith(opt.value)) {
                     document.getElementById("trackSelect").value = opt.value;
@@ -504,11 +502,9 @@
             document.getElementById("saveBtn").className = "btn btn-warning";
             document.getElementById("cancelEditBtn").style.display = "block";
 
-            // 画面の上部（入力フォーム）へスムーズにスクロール
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        // 編集キャンセル
         function cancelEdit() {
             document.getElementById("editingId").value = "";
             document.getElementById("formTitle").innerText = "📝 レース情報・収支記録";
