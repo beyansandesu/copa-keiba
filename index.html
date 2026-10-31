@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Copa by地方競馬 予想・収支管理アプリ Ver2.2</title>
+    <title>Copa by地方競馬 予想・収支管理アプリ Ver2.3</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -104,7 +104,7 @@
 </head>
 <body>
 
-    <h1>🐎 Copa by地方競馬 予想・収支管理 (Ver2.2)</h1>
+    <h1>🐎 Copa by地方競馬 予想・収支管理 (Ver2.3)</h1>
 
     <!-- 今日の印・要約 -->
     <div class="card">
@@ -134,6 +134,9 @@
         <h3 id="formTitle">📝 レース情報・収支記録</h3>
         <input type="hidden" id="editingId" value="">
         
+        <label style="font-weight:bold; font-size:12px; display:block; margin-bottom:2px;">開催日付</label>
+        <input type="date" id="raceDate" style="margin-bottom:8px;">
+
         <label style="font-weight:bold; display:block; margin-bottom:4px;">レース選択</label>
         <div class="flex-group" style="margin-bottom: 8px;">
             <select id="trackSelect" style="flex: 2;">
@@ -244,7 +247,6 @@
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
             <h2 style="margin:0;">📊 地方競馬 成績・収支ダッシュボード</h2>
             <div style="display: flex; gap: 6px;">
-                <button class="btn btn-warning" style="width: auto; padding: 6px 12px; font-size: 12px; margin-top:0;" onclick="cleanImportedDataOnly()">🧹 過去重賞データを分離</button>
                 <button class="btn btn-danger" style="width: auto; padding: 6px 12px; font-size: 12px; margin-top:0;" onclick="clearUserDataOnly()">全リセット</button>
             </div>
         </div>
@@ -264,6 +266,8 @@
         let isHistoryOpen = false;
 
         window.onload = function() {
+            // 初期日付に本日を設定
+            document.getElementById("raceDate").valueAsDate = new Date();
             loadSavedData();
             renderDashboard();
             updateWinnerCountInfo();
@@ -380,10 +384,9 @@
                 if(h.style === "先行") pt += 10;
                 if(h.style === "差し") pt += 5;
 
-                // ★ 重賞勝ち馬マスターとの自動連携ロジック
                 const isGradeWinner = gradeWinners.some(w => w.name && w.name.trim() === h.name.trim());
                 if (isGradeWinner) {
-                    pt += 10; // 重賞勝利実績ボーナス +10pt
+                    pt += 10;
                 }
 
                 return { ...h, point: pt, isGradeWinner: isGradeWinner };
@@ -428,6 +431,15 @@
             return total;
         }
 
+        function formatDateDisplay(dateStr) {
+            if(!dateStr) return new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' });
+            const parts = dateStr.split("-");
+            if(parts.length === 3) {
+                return `${parts[0]}/${parts[1]}/${parts[2]}`;
+            }
+            return dateStr;
+        }
+
         function saveRaceHistory() {
             const track = document.getElementById("trackSelect").value;
             const raceNo = document.getElementById("raceNoSelect").value;
@@ -450,7 +462,9 @@
 
             const ranking = getCalculatedRanking();
             const favoriteName = ranking.length > 0 ? ranking[0].name : "";
-            const today = new Date().toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' });
+            
+            const rawDate = document.getElementById("raceDate").value;
+            const formattedDate = formatDateDisplay(rawDate);
 
             const editingId = document.getElementById("editingId").value;
 
@@ -459,6 +473,8 @@
                 if (index !== -1) {
                     raceHistories[index] = {
                         ...raceHistories[index],
+                        date: formattedDate,
+                        rawDate: rawDate,
                         raceName: raceName,
                         weather: document.getElementById("weather").value,
                         trackCondition: document.getElementById("trackCondition").value,
@@ -475,7 +491,8 @@
             } else {
                 const historyData = {
                     id: Date.now(),
-                    date: today,
+                    date: formattedDate,
+                    rawDate: rawDate,
                     raceName: raceName,
                     favorite: favoriteName,
                     weather: document.getElementById("weather").value,
@@ -496,9 +513,21 @@
             renderDashboard();
         }
 
+        // ★ 編集機能（日付の読み込み・修正に対応）
         function editHistory(id) {
             const h = raceHistories.find(item => item.id == id);
             if (!h) return;
+
+            // 日立フォームへの日付反映
+            if (h.rawDate) {
+                document.getElementById("raceDate").value = h.rawDate;
+            } else if (h.date) {
+                // "YYYY/MM/DD" から "YYYY-MM-DD" へ変換してセット
+                const parts = h.date.split('/');
+                if (parts.length === 3) {
+                    document.getElementById("raceDate").value = `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+                }
+            }
 
             for (let opt of document.getElementById("trackSelect").options) {
                 if (h.raceName.startsWith(opt.value)) {
@@ -542,6 +571,7 @@
         }
 
         function resetInputFields() {
+            document.getElementById("raceDate").valueAsDate = new Date();
             document.getElementById("betsInput").value = "";
             document.getElementById("payout").value = "";
             document.getElementById("result1").value = "";
@@ -559,54 +589,6 @@
             }
         }
 
-        // ★ 購入データ（買い目・投資・払戻あり）だけを残し、インポートデータを過去マスター側へ移行・分離するボタン
-        function cleanImportedDataOnly() {
-            const beforeCount = raceHistories.length;
-
-            const realData = [];
-            const winnersExtracted = [];
-
-            raceHistories.forEach(h => {
-                const hasBets = h.betsText && h.betsText.trim() !== "";
-                const hasMoney = (h.investment > 0) || (h.payout > 0);
-
-                if (hasBets || hasMoney) {
-                    realData.push(h); // 実戦購入データとして保持
-                } else {
-                    // 1着馬が入っている場合は重賞マスターとして抽出
-                    if (h.results && h.results[0] && h.results[0].trim() !== "") {
-                        winnersExtracted.push({ name: h.results[0].trim(), race: h.raceName });
-                    }
-                }
-            });
-
-            const deletedCount = beforeCount - realData.length;
-
-            if (deletedCount === 0) {
-                alert("分離対象となるデータは見つかりませんでした。（すべての履歴に買い目または購入情報が入っています）");
-                return;
-            }
-
-            if (confirm(`買い目・購入金額の入っていない ${deletedCount} 件のデータを収支集計から外し、実戦データ ${realData.length} 件のみ残しますか？\n（抽出された勝ち馬情報は予想ロジック用マスターに保存されます）`)) {
-                raceHistories = realData;
-                localStorage.setItem("raceHistories", JSON.stringify(raceHistories));
-
-                // 勝ち馬マスターに統合保存
-                winnersExtracted.forEach(w => {
-                    if (!gradeWinners.some(g => g.name === w.name)) {
-                        gradeWinners.push(w);
-                    }
-                });
-                localStorage.setItem("gradeWinners", JSON.stringify(gradeWinners));
-
-                renderDashboard();
-                updateWinnerCountInfo();
-                renderList();
-                alert(`ダッシュボードのクレンジングが完了しました！\n実戦データ: ${realData.length}件\n予想用重賞マスター: ${gradeWinners.length}馬`);
-            }
-        }
-
-        // ★ CSVから重賞勝ち馬マスターを一括取込
         function importGradeWinnersCsv(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -617,11 +599,10 @@
                 let addCount = 0;
 
                 lines.forEach((line, index) => {
-                    if (!line.trim() || index === 0 && line.includes("開催日")) return; // ヘッダー行スキップ
+                    if (!line.trim() || index === 0 && line.includes("開催日")) return;
                     const cols = line.split(",").map(c => c.trim().replace(/^"|"$/g, ''));
                     
-                    // 開催日, 競馬場, 重賞レース名, 距離, 優勝馬
-                    const winnerName = cols[4] || cols[cols.length - 1]; // 最後の列または5列目
+                    const winnerName = cols[4] || cols[cols.length - 1];
                     const raceName = cols[2] || "";
 
                     if (winnerName) {
