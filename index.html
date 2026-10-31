@@ -235,7 +235,10 @@
     <div class="card">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
             <h2 style="margin:0;">📊 地方競馬 成績・収支ダッシュボード</h2>
-            <button class="btn btn-danger" style="width: auto; padding: 6px 12px; font-size: 12px; margin-top:0;" onclick="clearUserDataOnly()">予想履歴リセット</button>
+            <div style="display: flex; gap: 6px;">
+                <button class="btn btn-warning" style="width: auto; padding: 6px 12px; font-size: 12px; margin-top:0;" onclick="cleanImportedDataOnly()">🧹 過去データのみ自動削除</button>
+                <button class="btn btn-danger" style="width: auto; padding: 6px 12px; font-size: 12px; margin-top:0;" onclick="clearUserDataOnly()">全リセット</button>
+            </div>
         </div>
         <div id="dashboardStats" style="line-height: 1.8;"></div>
         <hr>
@@ -529,6 +532,31 @@
                 raceHistories = raceHistories.filter(h => h.id !== id);
                 localStorage.setItem("raceHistories", JSON.stringify(raceHistories));
                 renderDashboard();
+            }
+        }
+
+        // ★ 実戦（購入）データだけを残し、過去インポートデータだけを自動削除する処理
+        function cleanImportedDataOnly() {
+            const beforeCount = raceHistories.length;
+            // 買い目がある、または投資・払戻金が発生している実戦データだけを残す
+            const realData = raceHistories.filter(h => {
+                const hasBets = h.betsText && h.betsText.trim() !== "";
+                const hasMoney = (h.investment > 0) || (h.payout > 0);
+                return hasBets || hasMoney;
+            });
+
+            const deletedCount = beforeCount - realData.length;
+
+            if (deletedCount === 0) {
+                alert("削除対象となる過去インポートデータは見つかりませんでした。（すべてのデータに買い目または購入情報が入っています）");
+                return;
+            }
+
+            if (confirm(`買い目や収支の入っていない過去データ ${deletedCount} 件を削除し、実戦購入データ ${realData.length} 件のみを残しますか？`)) {
+                raceHistories = realData;
+                localStorage.setItem("raceHistories", JSON.stringify(raceHistories));
+                renderDashboard();
+                alert(`過去データ ${deletedCount} 件の削除が完了しました！実戦データのみ正しく集計されます。`);
             }
         }
 
