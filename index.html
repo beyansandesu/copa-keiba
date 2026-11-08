@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Copa by地方競馬 予想・収支管理アプリ Ver2.3</title>
+    <title>Copa by地方競馬 予想・収支管理 (Ver2.3)</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -266,7 +266,6 @@
         let isHistoryOpen = false;
 
         window.onload = function() {
-            // 初期日付に本日を設定
             document.getElementById("raceDate").valueAsDate = new Date();
             loadSavedData();
             renderDashboard();
@@ -455,11 +454,6 @@
             const r4 = document.getElementById("result4").value.trim();
             const r5 = document.getElementById("result5").value.trim();
 
-            if(!betsText && investment === 0 && payout === 0 && !r1) {
-                alert("買い目または結果を入力してください");
-                return;
-            }
-
             const ranking = getCalculatedRanking();
             const favoriteName = ranking.length > 0 ? ranking[0].name : "";
             
@@ -513,16 +507,13 @@
             renderDashboard();
         }
 
-        // ★ 編集機能（日付の読み込み・修正に対応）
         function editHistory(id) {
             const h = raceHistories.find(item => item.id == id);
             if (!h) return;
 
-            // 日立フォームへの日付反映
             if (h.rawDate) {
                 document.getElementById("raceDate").value = h.rawDate;
             } else if (h.date) {
-                // "YYYY/MM/DD" から "YYYY-MM-DD" へ変換してセット
                 const parts = h.date.split('/');
                 if (parts.length === 3) {
                     document.getElementById("raceDate").value = `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
@@ -685,7 +676,7 @@
             let totalInvestment = 0;
             let totalPayout = 0;
             let winRaces = 0;
-            let totalRaces = raceHistories.length;
+            let purchasedRacesCount = 0; // ★ 実際に購入したレースのカウント用
 
             let h1 = 0, h2 = 0, h3 = 0, hOut = 0;
             let ratedRacesCount = 0;
@@ -693,7 +684,14 @@
             raceHistories.forEach(h => {
                 totalInvestment += h.investment;
                 totalPayout += h.payout;
-                if(h.income > 0) winRaces++;
+
+                // ★ 実際に投資（購入）したレースのみ、的中（収支プラス）としてカウントする
+                if (h.investment > 0) {
+                    purchasedRacesCount++;
+                    if (h.income > 0) {
+                        winRaces++;
+                    }
+                }
 
                 if (h.favorite && h.results && h.results.length > 0) {
                     const fav = h.favorite.trim();
@@ -712,21 +710,24 @@
                 }
             });
 
+            const totalRaces = raceHistories.length;
             const totalIncome = totalPayout - totalInvestment;
             const recoveryRate = totalInvestment > 0 ? ((totalPayout / totalInvestment) * 100).toFixed(1) : "0.0";
-            const winRate = totalRaces > 0 ? ((winRaces / totalRaces) * 100).toFixed(1) : "0.0";
+            
+            // ★ 的中率は「購入したレース数（purchasedRacesCount）」を分母にする
+            const winRate = purchasedRacesCount > 0 ? ((winRaces / purchasedRacesCount) * 100).toFixed(1) : "0.0";
 
             const favWinRate = ratedRacesCount > 0 ? ((h1 / ratedRacesCount) * 100).toFixed(1) : "0.0";
             const favQuinellaRate = ratedRacesCount > 0 ? (((h1 + h2) / ratedRacesCount) * 100).toFixed(1) : "0.0";
             const favPlaceRate = ratedRacesCount > 0 ? (((h1 + h2 + h3) / ratedRacesCount) * 100).toFixed(1) : "0.0";
 
             document.getElementById("dashboardStats").innerHTML = `
-                <strong>総保存レース数：${totalRaces}レース</strong><br><br>
+                <strong>総保存レース数：${totalRaces}レース</strong>（購入レース数: ${purchasedRacesCount} / 見送り: ${totalRaces - purchasedRacesCount}）<br><br>
                 💰 <strong>総投資額：</strong> ${totalInvestment.toLocaleString()}円<br>
                 🎯 <strong>総回収額：</strong> ${totalPayout.toLocaleString()}円<br>
                 📈 <strong>トータル収支：</strong> <span style="color:${totalIncome >= 0 ? '#34c759' : '#ff3b30'}; font-weight:bold;">${totalIncome >= 0 ? '+' : ''}${totalIncome.toLocaleString()}円</span><br>
                 📊 <strong>回収率：</strong> <strong>${recoveryRate}%</strong><br>
-                🎯 <strong>的中率：</strong> ${winRate}% （的中レース数: ${winRaces} / ${totalRaces}）<br><br>
+                🎯 <strong>的中率：</strong> ${winRate}% （的中レース数: ${winRaces} / 購入${purchasedRacesCount}レース）<br><br>
                 <strong>【🏆 本命馬（◎）の成績分析】</strong>（集計対象: ${ratedRacesCount}レース）<br>
                 ・<strong>本命勝率：</strong> ${favWinRate}% （1着: ${h1}回）<br>
                 ・<strong>本命連対率：</strong> ${favQuinellaRate}% （1〜2着: ${h1 + h2}回）<br>
