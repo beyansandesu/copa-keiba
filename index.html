@@ -91,6 +91,12 @@
             color: #000;
             font-weight: bold;
         }
+        .tag-grade {
+            background: #e6f2ff;
+            color: #0071e3;
+            border: 1px solid #0071e3;
+            font-weight: bold;
+        }
         .history-item {
             border-bottom: 1px solid #eee;
             padding: 12px 0;
@@ -99,6 +105,29 @@
         .flex-group {
             display: flex;
             gap: 10px;
+        }
+        .radio-group {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            margin-bottom: 8px;
+            padding: 6px 10px;
+            background: #f9f9fb;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+        .radio-group label {
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .radio-group input[type="radio"] {
+            width: auto;
+            margin-bottom: 0;
+            cursor: pointer;
         }
     </style>
 </head>
@@ -136,6 +165,12 @@
         
         <label style="font-weight:bold; font-size:12px; display:block; margin-bottom:2px;">開催日付</label>
         <input type="date" id="raceDate" style="margin-bottom:8px;">
+
+        <label style="font-weight:bold; font-size:12px; display:block; margin-bottom:2px;">レース種別</label>
+        <div class="radio-group">
+            <label><input type="radio" name="raceCategory" value="normal" checked> 一般レース</label>
+            <label><input type="radio" name="raceCategory" value="grade"> 🏆 重賞レース</label>
+        </div>
 
         <label style="font-weight:bold; display:block; margin-bottom:4px;">レース選択</label>
         <div class="flex-group" style="margin-bottom: 8px;">
@@ -460,6 +495,10 @@
             const rawDate = document.getElementById("raceDate").value;
             const formattedDate = formatDateDisplay(rawDate);
 
+            // 重賞ラジオボタンの選択判定
+            const selectedCategory = document.querySelector('input[name="raceCategory"]:checked').value;
+            const isGradeRace = (selectedCategory === "grade");
+
             const editingId = document.getElementById("editingId").value;
 
             if (editingId) {
@@ -469,6 +508,7 @@
                         ...raceHistories[index],
                         date: formattedDate,
                         rawDate: rawDate,
+                        isGradeRace: isGradeRace,
                         raceName: raceName,
                         weather: document.getElementById("weather").value,
                         trackCondition: document.getElementById("trackCondition").value,
@@ -487,6 +527,7 @@
                     id: Date.now(),
                     date: formattedDate,
                     rawDate: rawDate,
+                    isGradeRace: isGradeRace,
                     raceName: raceName,
                     favorite: favoriteName,
                     weather: document.getElementById("weather").value,
@@ -517,6 +558,16 @@
                 const parts = h.date.split('/');
                 if (parts.length === 3) {
                     document.getElementById("raceDate").value = `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+                }
+            }
+
+            // 重賞ラジオボタンの反映
+            const categoryRadios = document.getElementsByName("raceCategory");
+            for (let radio of categoryRadios) {
+                if (h.isGradeRace && radio.value === "grade") {
+                    radio.checked = true;
+                } else if (!h.isGradeRace && radio.value === "normal") {
+                    radio.checked = true;
                 }
             }
 
@@ -563,6 +614,10 @@
 
         function resetInputFields() {
             document.getElementById("raceDate").valueAsDate = new Date();
+            const categoryRadios = document.getElementsByName("raceCategory");
+            for (let radio of categoryRadios) {
+                if (radio.value === "normal") radio.checked = true;
+            }
             document.getElementById("betsInput").value = "";
             document.getElementById("payout").value = "";
             document.getElementById("result1").value = "";
@@ -676,7 +731,7 @@
             let totalInvestment = 0;
             let totalPayout = 0;
             let winRaces = 0;
-            let purchasedRacesCount = 0; // ★ 実際に購入したレースのカウント用
+            let purchasedRacesCount = 0;
 
             let h1 = 0, h2 = 0, h3 = 0, hOut = 0;
             let ratedRacesCount = 0;
@@ -685,7 +740,6 @@
                 totalInvestment += h.investment;
                 totalPayout += h.payout;
 
-                // ★ 実際に投資（購入）したレースのみ、的中（収支プラス）としてカウントする
                 if (h.investment > 0) {
                     purchasedRacesCount++;
                     if (h.income > 0) {
@@ -713,8 +767,6 @@
             const totalRaces = raceHistories.length;
             const totalIncome = totalPayout - totalInvestment;
             const recoveryRate = totalInvestment > 0 ? ((totalPayout / totalInvestment) * 100).toFixed(1) : "0.0";
-            
-            // ★ 的中率は「購入したレース数（purchasedRacesCount）」を分母にする
             const winRate = purchasedRacesCount > 0 ? ((winRaces / purchasedRacesCount) * 100).toFixed(1) : "0.0";
 
             const favWinRate = ratedRacesCount > 0 ? ((h1 / ratedRacesCount) * 100).toFixed(1) : "0.0";
@@ -740,9 +792,10 @@
             let hHtml = "";
             displayList.forEach(h => {
                 const favText = h.favorite ? ` （本命: ${h.favorite}）` : "";
+                const gradeBadge = h.isGradeRace ? `<span class="tag tag-grade">🏆 重賞</span>` : "";
                 hHtml += `
                     <div class="history-item">
-                        <strong>📅 ${h.date} ｜ ${h.raceName}${favText}</strong><br>
+                        <strong>📅 ${h.date} ｜ ${h.raceName}${favText} ${gradeBadge}</strong><br>
                         <span style="font-size:12px; color:#666;">天気:${h.weather} ／ 馬場:${h.trackCondition} ／ バイアス:${h.bias}</span><br>
                         <strong>買い目:</strong><br><span style="white-space:pre-wrap; font-size:13px;">${h.betsText || 'なし'}</span><br>
                         <strong>投資:</strong> ${h.investment.toLocaleString()}円 ／ <strong>払戻:</strong> ${h.payout.toLocaleString()}円 （収支: <span style="color:${h.income>=0?'#28a745':'#d70015'}">${h.income>=0?'+':''}${h.income.toLocaleString()}円</span>）<br>
