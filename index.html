@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Copa by地方競馬 予想・収支管理 (Ver2.3)</title>
+    <title>Copa by地方競馬 予想・収支管理 (Ver3.0)</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -133,7 +133,7 @@
 </head>
 <body>
 
-    <h1>🐎 Copa by地方競馬 予想・収支管理 (Ver2.3)</h1>
+    <h1>🐎 Copa by地方競馬 予想・収支管理 (Ver3.0)</h1>
 
     <!-- 今日の印・要約 -->
     <div class="card">
@@ -230,7 +230,7 @@
             </div>
             <div style="flex: 1.5;">
                 <label style="font-weight:bold; font-size:12px;">トラックバイアス</label>
-                <select id="bias">
+                <select id="bias" onchange="renderList()">
                     <option value="内前有利" selected>内前有利</option>
                     <option value="内差し有利">内差し有利</option>
                     <option value="フラット">フラット</option>
@@ -264,7 +264,7 @@
     <!-- データバックアップ・管理 -->
     <div class="card">
         <h3>💾 データバックアップ・マスター管理</h3>
-        <p style="font-size: 12px; color: #666;">収支データのバックアップや、予想ロジック用「重賞勝ち馬データ(CSV)」の登録が行えます。</p>
+        <p style="font-size: 12px; color: #666;">収支データ・登録馬のバックアップや、予想ロジック用「重賞勝ち馬データ(CSV)」の登録が行えます。</p>
         <div class="flex-group">
             <button class="btn btn-secondary" onclick="exportData()" style="margin-top:4px;">📤 バックアップ保存(JSON)</button>
             <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()" style="margin-top:4px;">📥 復元(JSON選択)</button>
@@ -406,18 +406,47 @@
             return "△";
         }
 
+        // ① トラックバイアス連動の計算ロジック
         function getCalculatedRanking() {
+            const currentBias = document.getElementById("bias") ? document.getElementById("bias").value : "内前有利";
+
             return horses.map(h => {
                 let pt = 50;
                 const o = parseFloat(h.odds) || 99;
+
+                // オッズ加点
                 if(o <= 3.0) pt += 30;
                 else if(o <= 6.0) pt += 20;
                 else if(o <= 10.0) pt += 10;
 
-                if(h.style === "逃げ") pt += 15;
-                if(h.style === "先行") pt += 10;
-                if(h.style === "差し") pt += 5;
+                // トラックバイアス×脚質の動的加点
+                if (currentBias === "内前有利") {
+                    if (h.style === "逃げ") pt += 20;
+                    else if (h.style === "先行") pt += 15;
+                    else if (h.style === "差し") pt += 0;
+                } else if (currentBias === "外前有利") {
+                    if (h.style === "逃げ") pt += 15;
+                    else if (h.style === "先行") pt += 15;
+                    else if (h.style === "差し") pt += 5;
+                } else if (currentBias === "フラット") {
+                    if (h.style === "逃げ") pt += 10;
+                    else if (h.style === "先行") pt += 10;
+                    else if (h.style === "差し") pt += 10;
+                } else if (currentBias === "内差し有利") {
+                    if (h.style === "逃げ") pt += 5;
+                    else if (h.style === "先行") pt += 10;
+                    else if (h.style === "差し") pt += 15;
+                } else if (currentBias === "外差し有利") {
+                    if (h.style === "逃げ") pt += 0;
+                    else if (h.style === "先行") pt += 5;
+                    else if (h.style === "差し") pt += 20;
+                } else {
+                    if (h.style === "逃げ") pt += 15;
+                    else if (h.style === "先行") pt += 10;
+                    else if (h.style === "差し") pt += 5;
+                }
 
+                // 重賞勝ち馬加点
                 const isGradeWinner = gradeWinners.some(w => w.name && w.name.trim() === h.name.trim());
                 if (isGradeWinner) {
                     pt += 10;
@@ -491,11 +520,14 @@
 
             const ranking = getCalculatedRanking();
             const favoriteName = ranking.length > 0 ? ranking[0].name : "";
+
+            // ③ 予想TOP5の保存用データ作成
+            const markSymbol = ["◎","○","▲","△","×"];
+            const predictedTop5 = ranking.slice(0, 5).map((h, i) => `${markSymbol[i]} ${h.name}`).join(" / ");
             
             const rawDate = document.getElementById("raceDate").value;
             const formattedDate = formatDateDisplay(rawDate);
 
-            // 重賞ラジオボタンの選択判定
             const selectedCategory = document.querySelector('input[name="raceCategory"]:checked').value;
             const isGradeRace = (selectedCategory === "grade");
 
@@ -530,6 +562,7 @@
                     isGradeRace: isGradeRace,
                     raceName: raceName,
                     favorite: favoriteName,
+                    predictedTop5: predictedTop5, // ③ TOP5の記録
                     weather: document.getElementById("weather").value,
                     trackCondition: document.getElementById("trackCondition").value,
                     bias: document.getElementById("bias").value,
@@ -561,7 +594,6 @@
                 }
             }
 
-            // 重賞ラジオボタンの反映
             const categoryRadios = document.getElementsByName("raceCategory");
             for (let radio of categoryRadios) {
                 if (h.isGradeRace && radio.value === "grade") {
@@ -635,6 +667,7 @@
             }
         }
 
+        // ② CSV取込の判定強化
         function importGradeWinnersCsv(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -643,15 +676,26 @@
             reader.onload = function(e) {
                 const lines = e.target.result.split(/\r\n|\n/);
                 let addCount = 0;
+                let targetColIdx = -1;
 
                 lines.forEach((line, index) => {
-                    if (!line.trim() || index === 0 && line.includes("開催日")) return;
+                    if (!line.trim()) return;
                     const cols = line.split(",").map(c => c.trim().replace(/^"|"$/g, ''));
+
+                    // ヘッダー行から「勝ち馬」「馬名」列を検出
+                    if (index === 0) {
+                        cols.forEach((col, idx) => {
+                            if (col.includes("勝ち馬") || col.includes("1着") || col.includes("馬名")) {
+                                targetColIdx = idx;
+                            }
+                        });
+                        if (targetColIdx !== -1) return;
+                    }
                     
-                    const winnerName = cols[4] || cols[cols.length - 1];
+                    const winnerName = targetColIdx !== -1 ? cols[targetColIdx] : (cols[4] || cols[cols.length - 1]);
                     const raceName = cols[2] || "";
 
-                    if (winnerName) {
+                    if (winnerName && winnerName !== "馬名" && winnerName !== "勝ち馬") {
                         if (!gradeWinners.some(w => w.name === winnerName)) {
                             gradeWinners.push({ name: winnerName, race: raceName });
                             addCount++;
@@ -677,8 +721,10 @@
             }
         }
 
+        // ④ バックアップ拡張（currentHorsesも保存）
         function exportData() {
             const dataObj = {
+                currentHorses: horses,
                 raceHistories: raceHistories,
                 gradeWinners: gradeWinners,
                 exportDate: new Date().toISOString()
@@ -692,6 +738,7 @@
             downloadAnchor.remove();
         }
 
+        // ④ バックアップ復元（currentHorsesも復元）
         function importData(event) {
             const file = event.target.files[0];
             if(!file) return;
@@ -704,6 +751,10 @@
                         if(confirm(`バックアップファイルからデータを読み込みます。`)) {
                             raceHistories = parsed.raceHistories;
                             if (parsed.gradeWinners) gradeWinners = parsed.gradeWinners;
+                            if (parsed.currentHorses && Array.isArray(parsed.currentHorses)) {
+                                horses = parsed.currentHorses;
+                                saveData();
+                            }
                             localStorage.setItem("raceHistories", JSON.stringify(raceHistories));
                             localStorage.setItem("gradeWinners", JSON.stringify(gradeWinners));
                             renderDashboard();
@@ -793,9 +844,11 @@
             displayList.forEach(h => {
                 const favText = h.favorite ? ` （本命: ${h.favorite}）` : "";
                 const gradeBadge = h.isGradeRace ? `<span class="tag tag-grade">🏆 重賞</span>` : "";
+                const predictedTop5Text = h.predictedTop5 ? `<br><span style="font-size:12px; color:#0071e3;"><strong>予想TOP5:</strong> ${h.predictedTop5}</span>` : "";
+                
                 hHtml += `
                     <div class="history-item">
-                        <strong>📅 ${h.date} ｜ ${h.raceName}${favText} ${gradeBadge}</strong><br>
+                        <strong>📅 ${h.date} ｜ ${h.raceName}${favText} ${gradeBadge}</strong>${predictedTop5Text}<br>
                         <span style="font-size:12px; color:#666;">天気:${h.weather} ／ 馬場:${h.trackCondition} ／ バイアス:${h.bias}</span><br>
                         <strong>買い目:</strong><br><span style="white-space:pre-wrap; font-size:13px;">${h.betsText || 'なし'}</span><br>
                         <strong>投資:</strong> ${h.investment.toLocaleString()}円 ／ <strong>払戻:</strong> ${h.payout.toLocaleString()}円 （収支: <span style="color:${h.income>=0?'#28a745':'#d70015'}">${h.income>=0?'+':''}${h.income.toLocaleString()}円</span>）<br>
