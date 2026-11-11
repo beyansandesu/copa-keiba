@@ -91,6 +91,11 @@
             color: #000;
             font-weight: bold;
         }
+        .tag-past {
+            background: #ff9500;
+            color: #fff;
+            font-weight: bold;
+        }
         .tag-grade {
             background: #e6f2ff;
             color: #0071e3;
@@ -406,9 +411,24 @@
             return "△";
         }
 
-        // ① トラックバイアス連動の計算ロジック
+        // 保存済み50レース履歴の1〜5着馬名リストを作成
+        function getPastTop5HorseNames() {
+            const names = new Set();
+            raceHistories.forEach(h => {
+                if (h.results && Array.isArray(h.results)) {
+                    h.results.forEach(resName => {
+                        if (resName && resName.trim() !== "") {
+                            names.add(resName.trim());
+                        }
+                    });
+                }
+            });
+            return names;
+        }
+
         function getCalculatedRanking() {
             const currentBias = document.getElementById("bias") ? document.getElementById("bias").value : "内前有利";
+            const pastPerformers = getPastTop5HorseNames();
 
             return horses.map(h => {
                 let pt = 50;
@@ -446,13 +466,21 @@
                     else if (h.style === "差し") pt += 5;
                 }
 
-                // 重賞勝ち馬加点
+                // 重賞勝ち馬判定
                 const isGradeWinner = gradeWinners.some(w => w.name && w.name.trim() === h.name.trim());
                 if (isGradeWinner) {
                     pt += 10;
                 }
 
-                return { ...h, point: pt, isGradeWinner: isGradeWinner };
+                // 過去好走実績判定
+                const isPastPerformer = pastPerformers.has(h.name.trim());
+
+                return { 
+                    ...h, 
+                    point: pt, 
+                    isGradeWinner: isGradeWinner,
+                    isPastPerformer: isPastPerformer
+                };
             }).sort((a, b) => b.point - a.point);
         }
 
@@ -461,7 +489,11 @@
             const markSymbol = ["◎","○","▲","△","×"];
             const marks = [];
             ranking.forEach((horse, index) => {
-                if(index < 5) marks.push(`${markSymbol[index]} ${horse.frame}枠${horse.no}番 ${horse.name}（脚質:${horse.style}）`);
+                let badgeStr = "";
+                if (horse.isGradeWinner) badgeStr += " 🏆";
+                if (horse.isPastPerformer) badgeStr += " ⭐️";
+
+                if(index < 5) marks.push(`${markSymbol[index]} ${horse.frame}枠${horse.no}番 ${horse.name}${badgeStr}（脚質:${horse.style}）`);
             });
 
             document.getElementById("markList").innerHTML = marks.length ? marks.join("<br>") : "まだ登録されていません";
@@ -469,9 +501,10 @@
             let html = "";
             ranking.forEach((h, idx) => {
                 const winnerTag = h.isGradeWinner ? `<span class="tag tag-winner">🏆 重賞勝ち馬</span>` : "";
+                const pastTag = h.isPastPerformer ? `<span class="tag tag-past">⭐️ 過去好走馬</span>` : "";
                 html += `
                     <div class="horse-card">
-                        <strong>${idx + 1}位 ${h.frame}枠${h.no}番 ${h.name}</strong>（${h.jockey} / ${h.style}） ${winnerTag}<br>
+                        <strong>${idx + 1}位 ${h.frame}枠${h.no}番 ${h.name}</strong>（${h.jockey} / ${h.style}） ${winnerTag} ${pastTag}<br>
                         <span class="tag">オッズ: ${h.odds}</span>
                         <span class="tag">ランク: ${h.rank}</span>
                         <span class="tag">期待値: ${h.value}</span>
@@ -521,7 +554,6 @@
             const ranking = getCalculatedRanking();
             const favoriteName = ranking.length > 0 ? ranking[0].name : "";
 
-            // ③ 予想TOP5の保存用データ作成
             const markSymbol = ["◎","○","▲","△","×"];
             const predictedTop5 = ranking.slice(0, 5).map((h, i) => `${markSymbol[i]} ${h.name}`).join(" / ");
             
@@ -562,7 +594,7 @@
                     isGradeRace: isGradeRace,
                     raceName: raceName,
                     favorite: favoriteName,
-                    predictedTop5: predictedTop5, // ③ TOP5の記録
+                    predictedTop5: predictedTop5,
                     weather: document.getElementById("weather").value,
                     trackCondition: document.getElementById("trackCondition").value,
                     bias: document.getElementById("bias").value,
@@ -579,6 +611,7 @@
             localStorage.setItem("raceHistories", JSON.stringify(raceHistories));
             resetInputFields();
             renderDashboard();
+            renderList();
         }
 
         function editHistory(id) {
@@ -664,10 +697,10 @@
                 raceHistories = raceHistories.filter(h => h.id !== id);
                 localStorage.setItem("raceHistories", JSON.stringify(raceHistories));
                 renderDashboard();
+                renderList();
             }
         }
 
-        // ② CSV取込の判定強化
         function importGradeWinnersCsv(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -682,7 +715,6 @@
                     if (!line.trim()) return;
                     const cols = line.split(",").map(c => c.trim().replace(/^"|"$/g, ''));
 
-                    // ヘッダー行から「勝ち馬」「馬名」列を検出
                     if (index === 0) {
                         cols.forEach((col, idx) => {
                             if (col.includes("勝ち馬") || col.includes("1着") || col.includes("馬名")) {
@@ -717,11 +749,11 @@
                 raceHistories = [];
                 localStorage.setItem("raceHistories", JSON.stringify(raceHistories));
                 renderDashboard();
+                renderList();
                 alert("履歴をクリアしました。");
             }
         }
 
-        // ④ バックアップ拡張（currentHorsesも保存）
         function exportData() {
             const dataObj = {
                 currentHorses: horses,
@@ -738,7 +770,6 @@
             downloadAnchor.remove();
         }
 
-        // ④ バックアップ復元（currentHorsesも復元）
         function importData(event) {
             const file = event.target.files[0];
             if(!file) return;
