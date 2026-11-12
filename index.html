@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Copa by 地方競馬予想室 (Ver3.1)</title>
+    <title>Copa by 地方競馬予想室 (Ver3.2)</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -49,6 +49,27 @@
             margin-top: 12px;
         }
         .btn-toggle:hover { background-color: #5a6268; }
+        .filter-btn-group {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+        .filter-btn {
+            flex: 1;
+            padding: 6px;
+            background: #f0f0f5;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+            text-align: center;
+        }
+        .filter-btn.active {
+            background: #0071e3;
+            color: white;
+            border-color: #0071e3;
+        }
         textarea, input, select {
             width: 100%;
             padding: 10px;
@@ -96,6 +117,11 @@
             color: #fff;
             font-weight: bold;
         }
+        .tag-longshot {
+            background: #ff3b30;
+            color: #fff;
+            font-weight: bold;
+        }
         .tag-grade {
             background: #e6f2ff;
             color: #0071e3;
@@ -138,7 +164,7 @@
 </head>
 <body>
 
-    <h1>🐎 Copa by 地方競馬予想室 (Ver3.1)</h1>
+    <h1>🐎 Copa by 地方競馬予想室 (Ver3.2)</h1>
 
     <!-- 今日の印・要約 -->
     <div class="card">
@@ -250,7 +276,7 @@
 
         <div class="flex-group" style="margin-top: 8px;">
             <div style="flex:1;">
-                <label style="font-weight:bold; font-size:12px;">投資額(円) ※自動計算または手動入力</label>
+                <label style="font-weight:bold; font-size:12px;">投資額(円)</label>
                 <input type="number" id="investmentInput" placeholder="0">
             </div>
             <div style="flex:1;">
@@ -289,11 +315,19 @@
     <!-- ダッシュボード＆履歴 -->
     <div class="card">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-            <h2 style="margin:0;">📊 地方競馬 成績・収支ダッシュボード</h2>
+            <h2 style="margin:0;">📊 成績・収支ダッシュボード</h2>
             <div style="display: flex; gap: 6px;">
                 <button class="btn btn-danger" style="width: auto; padding: 6px 12px; font-size: 12px; margin-top:0;" onclick="clearUserDataOnly()">全リセット</button>
             </div>
         </div>
+
+        <!-- 成績フィルターボタン -->
+        <div class="filter-btn-group" style="margin-top: 10px;">
+            <div class="filter-btn active" id="filterAll" onclick="setDashboardFilter('all')">全レース</div>
+            <div class="filter-btn" id="filterNormal" onclick="setDashboardFilter('normal')">一般レース</div>
+            <div class="filter-btn" id="filterGrade" onclick="setDashboardFilter('grade')">🏆 重賞のみ</div>
+        </div>
+
         <div id="dashboardStats" style="line-height: 1.8;"></div>
         <hr>
         <h3>📜 保存済みレース履歴</h3>
@@ -308,6 +342,7 @@
         let raceHistories = JSON.parse(localStorage.getItem("raceHistories")) || [];
         let gradeWinners = JSON.parse(localStorage.getItem("gradeWinners")) || [];
         let isHistoryOpen = false;
+        let currentFilter = 'all'; // 'all', 'normal', 'grade'
 
         window.onload = function() {
             document.getElementById("raceDate").valueAsDate = new Date();
@@ -487,10 +522,16 @@
             const ranking = getCalculatedRanking();
             const markSymbol = ["◎","○","▲","△","×"];
             const marks = [];
+            
+            // 穴馬判定（オッズ10倍以上かつTOP5に入っている馬）
             ranking.forEach((horse, index) => {
                 let badgeStr = "";
                 if (horse.isGradeWinner) badgeStr += " 🏆";
                 if (horse.isPastPerformer) badgeStr += " ⭐️";
+                
+                const oddsVal = parseFloat(horse.odds) || 0;
+                const isLongshot = (oddsVal >= 10.0 && index < 5);
+                if (isLongshot) badgeStr += " 🔥";
 
                 if(index < 5) marks.push(`${markSymbol[index]} ${horse.frame}枠${horse.no}番 ${horse.name}${badgeStr}（脚質:${horse.style}）`);
             });
@@ -501,9 +542,14 @@
             ranking.forEach((h, idx) => {
                 const winnerTag = h.isGradeWinner ? `<span class="tag tag-winner">🏆 重賞勝ち馬</span>` : "";
                 const pastTag = h.isPastPerformer ? `<span class="tag tag-past">⭐️ 過去好走馬</span>` : "";
+                
+                const oddsVal = parseFloat(h.odds) || 0;
+                const isLongshot = (oddsVal >= 10.0 && idx < 5);
+                const longshotTag = isLongshot ? `<span class="tag tag-longshot">🔥 穴馬推奨</span>` : "";
+
                 html += `
                     <div class="horse-card">
-                        <strong>${idx + 1}位 ${h.frame}枠${h.no}番 ${h.name}</strong>（${h.jockey} / ${h.style}） ${winnerTag} ${pastTag}<br>
+                        <strong>${idx + 1}位 ${h.frame}枠${h.no}番 ${h.name}</strong>（${h.jockey} / ${h.style}） ${winnerTag} ${pastTag} ${longshotTag}<br>
                         <span class="tag">オッズ: ${h.odds}</span>
                         <span class="tag">ランク: ${h.rank}</span>
                         <span class="tag">期待値: ${h.value}</span>
@@ -541,8 +587,6 @@
             const raceName = track + raceNo;
 
             const betsText = document.getElementById("betsInput").value.trim();
-            
-            // 投資額：手動入力欄の値があれば優先、なければテキストから自動計算
             const manualInvestment = parseInt(document.getElementById("investmentInput").value, 10);
             const calcInvestment = calculateTotalInvestment(betsText);
             const investment = !isNaN(manualInvestment) && manualInvestment > 0 ? manualInvestment : calcInvestment;
@@ -815,7 +859,23 @@
             renderDashboard();
         }
 
+        function setDashboardFilter(filterType) {
+            currentFilter = filterType;
+            document.getElementById("filterAll").className = "filter-btn" + (filterType === 'all' ? " active" : "");
+            document.getElementById("filterNormal").className = "filter-btn" + (filterType === 'normal' ? " active" : "");
+            document.getElementById("filterGrade").className = "filter-btn" + (filterType === 'grade' ? " active" : "");
+            renderDashboard();
+        }
+
         function renderDashboard() {
+            // フィルターに応じた対象データを抽出
+            let targetHistories = raceHistories;
+            if (currentFilter === 'normal') {
+                targetHistories = raceHistories.filter(h => !h.isGradeRace);
+            } else if (currentFilter === 'grade') {
+                targetHistories = raceHistories.filter(h => h.isGradeRace);
+            }
+
             let totalInvestment = 0;
             let totalPayout = 0;
             let winRaces = 0;
@@ -824,7 +884,7 @@
             let h1 = 0, h2 = 0, h3 = 0, hOut = 0;
             let ratedRacesCount = 0;
 
-            raceHistories.forEach(h => {
+            targetHistories.forEach(h => {
                 totalInvestment += h.investment;
                 totalPayout += h.payout;
 
@@ -852,7 +912,7 @@
                 }
             });
 
-            const totalRaces = raceHistories.length;
+            const totalRaces = targetHistories.length;
             const totalIncome = totalPayout - totalInvestment;
             const recoveryRate = totalInvestment > 0 ? ((totalPayout / totalInvestment) * 100).toFixed(1) : "0.0";
             const winRate = purchasedRacesCount > 0 ? ((winRaces / purchasedRacesCount) * 100).toFixed(1) : "0.0";
@@ -861,8 +921,11 @@
             const favQuinellaRate = ratedRacesCount > 0 ? (((h1 + h2) / ratedRacesCount) * 100).toFixed(1) : "0.0";
             const favPlaceRate = ratedRacesCount > 0 ? (((h1 + h2 + h3) / ratedRacesCount) * 100).toFixed(1) : "0.0";
 
+            const filterLabel = currentFilter === 'normal' ? '【一般レース集計】' : (currentFilter === 'grade' ? '【🏆 重賞レース集計】' : '【全レース通算】');
+
             document.getElementById("dashboardStats").innerHTML = `
-                <strong>総保存レース数：${totalRaces}レース</strong>（購入レース数: ${purchasedRacesCount} / 見送り: ${totalRaces - purchasedRacesCount}）<br><br>
+                <div style="font-size:13px; color:#0071e3; font-weight:bold; margin-bottom:4px;">${filterLabel}</div>
+                <strong>対象レース数：${totalRaces}レース</strong>（購入レース数: ${purchasedRacesCount} / 見送り: ${totalRaces - purchasedRacesCount}）<br><br>
                 💰 <strong>総投資額：</strong> ${totalInvestment.toLocaleString()}円<br>
                 🎯 <strong>総回収額：</strong> ${totalPayout.toLocaleString()}円<br>
                 📈 <strong>トータル収支：</strong> <span style="color:${totalIncome >= 0 ? '#34c759' : '#ff3b30'}; font-weight:bold;">${totalIncome >= 0 ? '+' : ''}${totalIncome.toLocaleString()}円</span><br>
@@ -875,6 +938,7 @@
                 <span style="font-size:12px; color:#666;">（内訳：1着:${h1}回 ／ 2着:${h2}回 ／ 3着:${h3}回 ／ 着外:${hOut}回）</span>
             `;
 
+            // 履歴リストは常に全件表示（タブ切り替えに関わらず全体の履歴を確認可能）
             const displayList = isHistoryOpen ? raceHistories : raceHistories.slice(0, 3);
 
             let hHtml = "";
