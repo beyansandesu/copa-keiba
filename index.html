@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Copa by 地方競馬予想室 (Ver3.2)</title>
+    <title>Copa by 地方競馬予想室 (Ver3.3)</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -79,18 +79,32 @@
             font-size: 15px;
             margin-bottom: 8px;
         }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
+        .course-info-box {
+            background-color: #f0f7ff;
+            border: 1px solid #b8daff;
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 12px;
+            font-size: 13px;
+            color: #004085;
         }
-        th, td {
-            border: 1px solid #e0e0e0;
-            padding: 8px;
-            text-align: center;
+        .course-info-title {
+            font-weight: bold;
             font-size: 14px;
+            margin-bottom: 8px;
+            color: #003366;
         }
-        th { background-color: #f0f0f5; }
+        .course-pill {
+            display: inline-block;
+            background: #ffffff;
+            border: 1px solid #80bdff;
+            color: #0056b3;
+            border-radius: 16px;
+            padding: 3px 10px;
+            font-size: 12px;
+            font-weight: bold;
+            margin: 2px 4px 2px 0;
+        }
         .horse-card {
             border-left: 5px solid #0071e3;
             margin-bottom: 10px;
@@ -164,7 +178,7 @@
 </head>
 <body>
 
-    <h1>🐎 Copa by 地方競馬予想室 (Ver3.2)</h1>
+    <h1>🐎 Copa by 地方競馬予想室 (Ver3.3)</h1>
 
     <!-- 今日の印・要約 -->
     <div class="card">
@@ -203,9 +217,9 @@
             <label><input type="radio" name="raceCategory" value="grade"> 🏆 重賞レース</label>
         </div>
 
-        <label style="font-weight:bold; display:block; margin-bottom:4px;">レース選択</label>
-        <div class="flex-group" style="margin-bottom: 8px;">
-            <select id="trackSelect" style="flex: 2;">
+        <label style="font-weight:bold; display:block; margin-bottom:4px;">レース・距離選択</label>
+        <div class="flex-group" style="margin-bottom: 4px;">
+            <select id="trackSelect" style="flex: 1.3;" onchange="updateCourseInfo()">
                 <option value="大井">大井</option>
                 <option value="門別">門別</option>
                 <option value="川崎">川崎</option>
@@ -223,7 +237,7 @@
                 <option value="帯広">帯広(ばんえい)</option>
             </select>
             
-            <select id="raceNoSelect" style="flex: 1;">
+            <select id="raceNoSelect" style="flex: 0.9;">
                 <option value="1レース">1R</option>
                 <option value="2レース">2R</option>
                 <option value="3レース">3R</option>
@@ -237,7 +251,16 @@
                 <option value="11レース" selected>11R</option>
                 <option value="12レース">12R</option>
             </select>
+
+            <select id="distanceCategory" style="flex: 1.6;" onchange="updateCourseInfo()">
+                <option value="sprint">短距離 (~1400m)</option>
+                <option value="mile" selected>マイル (1500m~1800m)</option>
+                <option value="long">中長距離 (1900m~)</option>
+            </select>
         </div>
+
+        <!-- 競馬場・コース特徴ガイドボックス -->
+        <div id="courseInfoBox" class="course-info-box"></div>
 
         <div class="flex-group">
             <div style="flex: 1;">
@@ -342,10 +365,209 @@
         let raceHistories = JSON.parse(localStorage.getItem("raceHistories")) || [];
         let gradeWinners = JSON.parse(localStorage.getItem("gradeWinners")) || [];
         let isHistoryOpen = false;
-        let currentFilter = 'all'; // 'all', 'normal', 'grade'
+        let currentFilter = 'all';
+
+        // 地方競馬15場コースマスターデータ
+        const trackMaster = {
+            "大井": {
+                base: "右回り / 直線: 外386m / 内286m（地方最長級）",
+                slope: "ほぼ平坦",
+                biasNote: "外回り差し・内前",
+                style: "先行・差し",
+                distNote: {
+                    sprint: "1200mは外回り使用でスピードと直線の持続力が問われる。",
+                    mile: "マイル前後の標準バランスで評価（1600mは内回り使用で先行有利）。",
+                    long: "外回り使用。長い直線で差し・追い込みも十分届く。"
+                }
+            },
+            "門別": {
+                base: "右回り / 直線: 外330m（砂厚でタフ）",
+                slope: "ほぼ平坦",
+                biasNote: "内回り外枠・外回りフラット",
+                style: "先行・差し",
+                distNote: {
+                    sprint: "1000m〜1200mは内回り。テンのダッシュ力と先行力が重要。",
+                    mile: "1700m・1800mは外回り使用。パワーとスタミナが必須。",
+                    long: "2000m以上は完全なスタミナ勝負。タフな馬場適性を重視。"
+                }
+            },
+            "川崎": {
+                base: "左回り / 直線: 300m（コーナーがきつい）",
+                slope: "ほぼ平坦",
+                biasNote: "内枠・逃げ先行有利",
+                style: "逃げ・先行",
+                distNote: {
+                    sprint: "900m・1400mは最初のコーナーまで短く、内枠先行が圧倒的有利。",
+                    mile: "1500m・1600mは3〜4角の立ち回りが鍵。器用な先行馬を狙う。",
+                    long: "2000m以上は道中の折り合いとスタミナが問われ差しも台頭。"
+                }
+            },
+            "船橋": {
+                base: "左回り / 直線: 308m（スパイラルカーブ）",
+                slope: "ほぼ平坦",
+                biasNote: "外差しも決まりやすい",
+                style: "先行・差し",
+                distNote: {
+                    sprint: "1000m・1200mはテンが速く、ハイペースなら差しも届く。",
+                    mile: "1600m〜1800mはスパイラルカーブでペースが流れやすく実力勝負。",
+                    long: "2200m・2400mは持久力と騎手の仕掛けのタイミングが重要。"
+                }
+            },
+            "浦和": {
+                base: "左回り / 直線: 220m（南関最短・小回り）",
+                slope: "ほぼ平坦",
+                biasNote: "極端な内枠・逃げ先行有利",
+                style: "逃げ・先行",
+                distNote: {
+                    sprint: "800m・1400mはスタート直後のポジション争いでほぼ決着。",
+                    mile: "1500mは3角手前発走で外枠が不利になりやすい。",
+                    long: "2000mはスタンド前発走。早め先頭の押し切りが王道。"
+                }
+            },
+            "園田": {
+                base: "右回り / 直線: 213m（小回り・砂厚め）",
+                slope: "2角〜向正面に緩い上り",
+                biasNote: "逃げ・2番手先行有利",
+                style: "逃げ・先行",
+                distNote: {
+                    sprint: "820m・1230m・1400mは好位でインを立ち回れる馬が断然有利。",
+                    mile: "1700mは向正面からのロングスパート戦になりやすく持続力が必要。",
+                    long: "1870m以上はタフな消耗戦。スタミナと早め進出できる機動力。"
+                }
+            },
+            "姫路": {
+                base: "右回り / 直線: 230m（園田より少し広い）",
+                slope: "ほぼ平坦",
+                biasNote: "基本は先行有利・外差しも可",
+                style: "先行",
+                distNote: {
+                    sprint: "800m・1400mはスピード重視の先行押し切りが基本。",
+                    mile: "1500m・1800mはコーナーが緩やかで実力馬が力を出しやすい。",
+                    long: "2000mは持久力戦。中団から長く脚を使えるタイプも好走。"
+                }
+            },
+            "名古屋": {
+                base: "右回り / 直線: 240m（スパイラルカーブ・砂深い）",
+                slope: "ほぼ平坦",
+                biasNote: "インが深く外め先行・差し有利",
+                style: "先行・差し",
+                distNote: {
+                    sprint: "920m・1400mは外目のスムーズな先行勢が伸びやすい。",
+                    mile: "1500m・1700mは3〜4角で外から被せていけるパワー型が優勢。",
+                    long: "2000m以上はスタミナ消耗戦。バテずに伸びる差し馬に注意。"
+                }
+            },
+            "笠松": {
+                base: "右回り / 直線: 201m（全国屈指の超小回り）",
+                slope: "ほぼ平坦",
+                biasNote: "絶対的な逃げ・先行有利",
+                style: "逃げ・先行",
+                distNote: {
+                    sprint: "800m・1400mは前につけないとノーチャンスになりやすい。",
+                    mile: "1600m・1800mも4角先頭〜2番手がそのまま押し切るケース多数。",
+                    long: "1900m以上は道中の捲りが決まる展開なら差しも浮上。"
+                }
+            },
+            "金沢": {
+                base: "右回り / 直線: 236m（砂厚薄め・高速馬場）",
+                slope: "2角付近に高低差あり",
+                biasNote: "内枠・スピード先行有利",
+                style: "逃げ・先行",
+                distNote: {
+                    sprint: "900m・1400mは持ち時計とスピードが直結する前残り決着が多い。",
+                    mile: "1500m・1700mは好位インで脚を溜められる馬が堅実。",
+                    long: "1900m〜2100mは地力とスタミナ勝負。重賞実績馬が順当に強い。"
+                }
+            },
+            "高知": {
+                base: "右回り / 直線: 200m（非常に深い砂・内ラチ沿い深い）",
+                slope: "ほぼ平坦",
+                biasNote: "内を空けて外目を通る先行・差し",
+                style: "先行・差し",
+                distNote: {
+                    sprint: "800m・1300m・1400mは外枠・外め好位を通れる馬が有利。",
+                    mile: "1600mは向正面からペースが上がり、タフなパワー型が台頭。",
+                    long: "1900m以上は過酷なスタミナ戦。斤量や地力の差がハッキリ出る。"
+                }
+            },
+            "佐賀": {
+                base: "右回り / 直線: 200m（内ラチ沿い砂深い）",
+                slope: "ほぼ平坦",
+                biasNote: "インを空けた外目先行・捲り",
+                style: "先行・差し",
+                distNote: {
+                    sprint: "900m・1300m・1400mは内枠だと砂の深いインに閉じ込められやすい。",
+                    mile: "1750m・1800mは向正面から外を捲っていく機動力ある馬が好走。",
+                    long: "2000mは純粋なスタミナと底力勝負。"
+                }
+            },
+            "盛岡": {
+                base: "左回り / 直線: 300m（高低差4.4mの急坂）",
+                slope: "向正面〜3角上り・直線急坂",
+                biasNote: "フラット（実力通り決まりやすい）",
+                style: "先行・差し",
+                distNote: {
+                    sprint: "1000m・1200m・1400mは坂を苦にしないスピード持続力が必要。",
+                    mile: "1600mはワンターン（芝・ダート共通）。紛れが少なく実力重視。",
+                    long: "1800m〜2000mは坂を2回越えるタフなコース。スタミナ重視。"
+                }
+            },
+            "水沢": {
+                base: "右回り / 直線: 200m（小回り・平坦）",
+                slope: "ほぼ平坦",
+                biasNote: "内枠・逃げ先行有利",
+                style: "逃げ・先行",
+                distNote: {
+                    sprint: "850m・1300m・1400mは圧倒的に前残り。スタートの良さが直結。",
+                    mile: "1600mは1角までの距離が短く、内枠の先行馬が優位。",
+                    long: "1900m・2000mは3〜4角の機動力が鍵。好位抜け出しが理想。"
+                }
+            },
+            "帯広": {
+                base: "直線200mセパレートコース（2つの障害）",
+                slope: "第1障害(1m)・第2障害(1.6m)",
+                biasNote: "馬場水分と重量（ハンデ）が最優先",
+                style: "先行（障害巧者）",
+                distNote: {
+                    sprint: "全レース直線200m。軽馬場（水分多め）ならスピード重視。",
+                    mile: "重い馬場（乾燥）なら第2障害を一腰で越える登坂力・スタミナ重視。",
+                    long: "高重量戦・重賞は障害力とゴール前の粘り強さがすべて。"
+                }
+            }
+        };
+
+        function updateCourseInfo() {
+            const track = document.getElementById("trackSelect").value;
+            const dist = document.getElementById("distanceCategory").value;
+            const infoBox = document.getElementById("courseInfoBox");
+
+            const data = trackMaster[track];
+            if (!data) {
+                infoBox.style.display = "none";
+                return;
+            }
+
+            const distLabel = dist === "sprint" ? "短距離" : (dist === "mile" ? "マイル" : "中長距離");
+            const courseType = track === "帯広" ? "ばんえい" : "ダート";
+            const distText = data.distNote[dist] || "";
+
+            infoBox.style.display = "block";
+            infoBox.innerHTML = `
+                <div class="course-info-title">📍 ${track}（${courseType}・${distLabel}）｜ ${data.base}</div>
+                <div>
+                    <span class="course-pill">坂: ${data.slope}</span>
+                    <span class="course-pill">枠・馬場傾向: ${data.biasNote}</span>
+                    <span class="course-pill">好走脚質: ${data.style}</span>
+                </div>
+                <div style="margin-top: 4px;">
+                    <span class="course-pill" style="background:#e6f2ff; border-color:#0071e3;">💡 ${distText}</span>
+                </div>
+            `;
+        }
 
         window.onload = function() {
             document.getElementById("raceDate").valueAsDate = new Date();
+            updateCourseInfo();
             loadSavedData();
             renderDashboard();
             updateWinnerCountInfo();
@@ -523,7 +745,6 @@
             const markSymbol = ["◎","○","▲","△","×"];
             const marks = [];
             
-            // 穴馬判定（オッズ10倍以上かつTOP5に入っている馬）
             ranking.forEach((horse, index) => {
                 let badgeStr = "";
                 if (horse.isGradeWinner) badgeStr += " 🏆";
@@ -585,6 +806,7 @@
             const track = document.getElementById("trackSelect").value;
             const raceNo = document.getElementById("raceNoSelect").value;
             const raceName = track + raceNo;
+            const distanceCategory = document.getElementById("distanceCategory").value;
 
             const betsText = document.getElementById("betsInput").value.trim();
             const manualInvestment = parseInt(document.getElementById("investmentInput").value, 10);
@@ -622,6 +844,7 @@
                         rawDate: rawDate,
                         isGradeRace: isGradeRace,
                         raceName: raceName,
+                        distanceCategory: distanceCategory,
                         weather: document.getElementById("weather").value,
                         trackCondition: document.getElementById("trackCondition").value,
                         bias: document.getElementById("bias").value,
@@ -641,6 +864,7 @@
                     rawDate: rawDate,
                     isGradeRace: isGradeRace,
                     raceName: raceName,
+                    distanceCategory: distanceCategory,
                     favorite: favoriteName,
                     predictedTop5: predictedTop5,
                     weather: document.getElementById("weather").value,
@@ -692,6 +916,11 @@
                     break;
                 }
             }
+
+            if (h.distanceCategory) {
+                document.getElementById("distanceCategory").value = h.distanceCategory;
+            }
+            updateCourseInfo();
 
             document.getElementById("weather").value = h.weather || "晴";
             document.getElementById("trackCondition").value = h.trackCondition || "良";
@@ -868,7 +1097,6 @@
         }
 
         function renderDashboard() {
-            // フィルターに応じた対象データを抽出
             let targetHistories = raceHistories;
             if (currentFilter === 'normal') {
                 targetHistories = raceHistories.filter(h => !h.isGradeRace);
@@ -938,7 +1166,6 @@
                 <span style="font-size:12px; color:#666;">（内訳：1着:${h1}回 ／ 2着:${h2}回 ／ 3着:${h3}回 ／ 着外:${hOut}回）</span>
             `;
 
-            // 履歴リストは常に全件表示（タブ切り替えに関わらず全体の履歴を確認可能）
             const displayList = isHistoryOpen ? raceHistories : raceHistories.slice(0, 3);
 
             let hHtml = "";
