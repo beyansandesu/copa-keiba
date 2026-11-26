@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Copa by 地方競馬予想室 (Ver3.3)</title>
+    <title>Copa by 地方競馬予想室 (Ver3.3 分析機能強化版)</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -201,6 +201,9 @@
     <div class="card">
         <h3>📊 総合評価・指数ランキング</h3>
         <div id="rankingList">まだ登録されていません</div>
+        <div id="raceAssessment" style="margin-top:12px; padding:12px; background:#f7f9fc; border:1px solid #d9e2ef; border-radius:10px;">
+            <strong>🧭 レース評価・買い方判断</strong><br>出走表を登録すると判定します。
+        </div>
     </div>
 
     <!-- レース情報・収支入力 -->
@@ -219,7 +222,7 @@
 
         <label style="font-weight:bold; display:block; margin-bottom:4px;">レース・距離選択</label>
         <div class="flex-group" style="margin-bottom: 4px;">
-            <select id="trackSelect" style="flex: 1.3;" onchange="updateCourseInfo()">
+            <select id="trackSelect" style="flex: 1.3;" onchange="updateCourseInfo(); renderBiasAnalytics()">
                 <option value="大井">大井</option>
                 <option value="門別">門別</option>
                 <option value="川崎">川崎</option>
@@ -252,7 +255,7 @@
                 <option value="12レース">12R</option>
             </select>
 
-            <select id="distanceCategory" style="flex: 1.6;" onchange="updateCourseInfo()">
+            <select id="distanceCategory" style="flex: 1.6;" onchange="updateCourseInfo(); renderBiasAnalytics()">
                 <option value="sprint">短距離 (~1400m)</option>
                 <option value="mile" selected>マイル (1500m~1800m)</option>
                 <option value="long">中長距離 (1900m~)</option>
@@ -275,7 +278,7 @@
             </div>
             <div style="flex: 1;">
                 <label style="font-weight:bold; font-size:12px;">馬場</label>
-                <select id="trackCondition">
+                <select id="trackCondition" onchange="renderBiasAnalytics()">
                     <option value="良">良</option>
                     <option value="稍重">稍重</option>
                     <option value="重" selected>重</option>
@@ -292,6 +295,9 @@
                     <option value="外差し有利">外差し有利</option>
                 </select>
             </div>
+        </div>
+        <div id="trackBiasAnalytics" style="margin:4px 0 12px; padding:12px; background:#f0f7ff; border:1px solid #b8daff; border-radius:10px; font-size:13px;">
+            <strong>📈 過去のバイアス記録</strong><br>保存済みデータを集計します。
         </div>
 
         <label style="font-weight:bold; font-size:14px; margin-top:8px; display:block;">買い目・金額設定（複数行入力可）</label>
@@ -570,6 +576,8 @@
             updateCourseInfo();
             loadSavedData();
             renderDashboard();
+            renderBiasAnalytics();
+            renderRaceAssessment();
             updateWinnerCountInfo();
         };
 
@@ -779,6 +787,80 @@
                 `;
             });
             document.getElementById("rankingList").innerHTML = html || "まだ登録されていません";
+            renderRaceAssessment();
+        }
+
+        // 保存済みの「入力されたバイアス記録」を競馬場・距離区分・馬場状態別に集計。
+        // 実際の着順や通過順から自動推定したものではないため、記録件数と併せて表示する。
+        function renderBiasAnalytics() {
+            const box = document.getElementById("trackBiasAnalytics");
+            if (!box) return;
+            const track = document.getElementById("trackSelect").value;
+            const dist = document.getElementById("distanceCategory").value;
+            const condition = document.getElementById("trackCondition").value;
+            const distLabel = dist === "sprint" ? "短距離" : (dist === "mile" ? "マイル" : "中長距離");
+            const matching = raceHistories.filter(h => {
+                const raceName = String(h.raceName || "");
+                return raceName.startsWith(track) && h.distanceCategory === dist && h.trackCondition === condition &&
+                    ["内前有利", "内差し有利", "フラット", "外前有利", "外差し有利"].includes(h.bias);
+            });
+            const labels = ["内前有利", "内差し有利", "フラット", "外前有利", "外差し有利"];
+            const counts = labels.map(label => ({label, count: matching.filter(h => h.bias === label).length}));
+            const sorted = [...counts].sort((a,b) => b.count-a.count);
+            const leader = sorted[0];
+            let reliability = "記録不足";
+            if (matching.length >= 10) reliability = "参考度：比較的高め（10件以上）";
+            else if (matching.length >= 5) reliability = "参考度：中程度（5〜9件）";
+            else if (matching.length > 0) reliability = "参考度：低め（5件未満）";
+            const countText = counts.map(x => `${x.label} ${x.count}件`).join(" ／ ");
+            let summary = matching.length === 0
+                ? "該当条件の記録がありません。まだ傾向を判定できません。"
+                : (leader.count === sorted[1].count
+                    ? "複数の傾向が同数です。特定のバイアスに決めつけないでください。"
+                    : `最多記録：<strong>${leader.label}</strong>（${leader.count}/${matching.length}件）`);
+            box.innerHTML = `<strong>📈 過去のバイアス記録</strong><br><span style="color:#345;">${track}・${distLabel}・${condition}</span><br>${summary}<br><span style="font-size:12px;color:#555;">対象 ${matching.length}件｜${reliability}</span><br><span style="font-size:12px;color:#555;">${countText}</span><br><span style="font-size:11px;color:#666;">※過去に手入力して保存したバイアスの集計です。着順から自動判定した結果ではありません。</span>`;
+        }
+
+        // 信頼度と期待値を混同しない保守的なレース評価。具体的な的中確率・期待値は算出しない。
+        function renderRaceAssessment() {
+            const box = document.getElementById("raceAssessment");
+            if (!box) return;
+            const ranking = getCalculatedRanking();
+            if (ranking.length < 3) {
+                box.innerHTML = `<strong>🧭 レース評価・買い方判断</strong><br>出走馬が${ranking.length}頭です。3頭以上の登録後に評価します。<br><strong>期待値：</strong>未算出`;
+                return;
+            }
+            const validOdds = ranking.filter(h => Number.isFinite(parseFloat(h.odds)) && parseFloat(h.odds) > 0);
+            const coverage = validOdds.length / ranking.length;
+            const topGap = ranking.length >= 2 ? ranking[0].point - ranking[1].point : 0;
+            const topFive = ranking.slice(0,5);
+            const longshotCount = topFive.filter(h => parseFloat(h.odds) >= 8 && parseFloat(h.odds) <= 30).length;
+            let confidence = "C（慎重）";
+            if (ranking.length >= 7 && coverage >= 0.8 && topGap >= 15) confidence = "A（比較的明確）";
+            else if (ranking.length >= 5 && coverage >= 0.7 && topGap >= 8) confidence = "B（標準）";
+            const reasons = [];
+            if (ranking.length < 5) reasons.push("出走頭数が少ない");
+            if (coverage < 0.7) reasons.push("オッズ入力が不足");
+            if (topGap < 8) reasons.push("上位評価が接近");
+            let decision = "見送り寄り";
+            let betAdvice = "材料不足のため、無理に買わず見送りを優先。";
+            if (confidence === "A（比較的明確）") {
+                decision = "通常勝負候補";
+                betAdvice = "ワイド・複勝を基本に検討。相手関係が絞れる場合のみ枠連も候補。";
+            } else if (confidence === "B（標準）") {
+                decision = "少額の通常勝負候補";
+                betAdvice = "ワイド・複勝を中心に点数を抑える。三連系は急がない。";
+            }
+            if (ranking.length >= 7 && coverage >= 0.8 && longshotCount >= 2 && topGap >= 8) {
+                decision = "高配当検討候補（条件付き）";
+                betAdvice = "上位評価内に中穴候補が複数。三連複を検討対象にできるが、展開・枠順・当日馬場の確認が必要。三連単はさらに慎重に。";
+            }
+            if (ranking.length < 5 || coverage < 0.5) {
+                decision = "見送り推奨";
+                betAdvice = "出走馬数またはオッズ情報が不足。評価の信頼性を確保できないため見送り。";
+            }
+            const reasonText = reasons.length ? reasons.join("・") : "頭数・オッズ入力率・上位評価差を確認";
+            box.innerHTML = `<strong>🧭 レース評価・買い方判断</strong><br><div style="margin-top:6px;"><strong>勝負判断：</strong>${decision}<br><strong>評価信頼度：</strong>${confidence}<br><strong>上位2頭の評価差：</strong>${topGap}点<br><strong>オッズ入力：</strong>${validOdds.length}/${ranking.length}頭（${(coverage*100).toFixed(0)}%）<br><strong>判断理由：</strong>${reasonText}</div><div style="margin-top:8px;padding:8px;background:#fff;border-radius:8px;"><strong>🎯 買い方の方向性</strong><br>${betAdvice}</div><div style="margin-top:7px;font-size:12px;color:#555;"><strong>期待値：</strong>未算出（的中確率を推定するデータがないため）。評価信頼度とは別項目です。<br>※これは登録情報に基づく暫定ルール判定です。実際の勝率・回収率を保証するものではありません。</div>`;
         }
 
         function calculateTotalInvestment(text) {
@@ -884,6 +966,7 @@
             resetInputFields();
             renderDashboard();
             renderList();
+            renderBiasAnalytics();
         }
 
         function editHistory(id) {
@@ -1270,6 +1353,7 @@
                 `;
             });
             document.getElementById("historyList").innerHTML = hHtml || "保存された履歴はありません";
+            renderBiasAnalytics();
 
             const toggleContainer = document.getElementById("toggleHistoryContainer");
             const toggleBtn = document.getElementById("toggleBtn");
