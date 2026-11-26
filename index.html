@@ -1049,38 +1049,116 @@
             downloadAnchor.remove();
         }
 
+        // 復元前のデータをJSONとして自動保存するための関数
+        function downloadBackupObject(data, prefix) {
+            const json = JSON.stringify(data, null, 2);
+            const blob = new Blob([json], { type: "application/json;charset=utf-8" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            const date = new Date().toISOString().replace(/[:.]/g, "-");
+            a.href = url;
+            a.download = `${prefix}_${date}.json`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+
+        function isArrayOfObjects(value) {
+            return Array.isArray(value) && value.every(item =>
+                item !== null && typeof item === "object" && !Array.isArray(item)
+            );
+        }
+
         function importData(event) {
-            const file = event.target.files[0];
-            if(!file) return;
+            const file = event.target.files && event.target.files[0];
+            if (!file) return;
 
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
                     const parsed = JSON.parse(e.target.result);
-                    if(parsed.raceHistories && Array.isArray(parsed.raceHistories)) {
-                        if(confirm(`バックアップファイルからデータを読み込みます。`)) {
-                            raceHistories = parsed.raceHistories;
-                            if (parsed.gradeWinners) gradeWinners = parsed.gradeWinners;
-                            if (parsed.currentHorses && Array.isArray(parsed.currentHorses)) {
-                                horses = parsed.currentHorses;
-                                saveData();
-                            }
-                            localStorage.setItem("raceHistories", JSON.stringify(raceHistories));
-                            localStorage.setItem("gradeWinners", JSON.stringify(gradeWinners));
-                            renderDashboard();
-                            updateWinnerCountInfo();
-                            renderList();
-                            alert("データの復元が完了しました！");
-                        }
-                    } else {
-                        alert("有効なバックアップファイルではありません。");
+
+                    // 必須データと、存在する場合の任意データを検証
+                    const valid = parsed && typeof parsed === "object" &&
+                        !Array.isArray(parsed) &&
+                        isArrayOfObjects(parsed.raceHistories) &&
+                        (parsed.gradeWinners === undefined || isArrayOfObjects(parsed.gradeWinners)) &&
+                        (parsed.currentHorses === undefined || isArrayOfObjects(parsed.currentHorses));
+
+                    if (!valid) {
+                        alert("有効なバックアップファイルではありません。JSONの形式またはデータ内容を確認してください。");
+                        return;
                     }
-                } catch(err) {
-                    alert("JSONファイルの読み込みに失敗しました。");
+
+                    const importDate = parsed.exportDate
+                        ? new Date(parsed.exportDate).toLocaleString("ja-JP")
+                        : "記録なし";
+                    const historyCount = parsed.raceHistories.length;
+                    const winnerCount = parsed.gradeWinners ? parsed.gradeWinners.length : gradeWinners.length;
+                    const horseCount = parsed.currentHorses ? parsed.currentHorses.length : horses.length;
+
+                    const message =
+                        `次のバックアップを読み込みます。\n\n` +
+                        `バックアップ日時：${importDate}\n` +
+                        `レース履歴：${historyCount}件\n` +
+                        `重賞勝ち馬：${winnerCount}件\n` +
+                        `登録馬：${horseCount}件\n\n` +
+                        `現在のデータは復元内容に置き換わります。続行しますか？`;
+
+                    if (!confirm(message)) return;
+
+                    // 復元直前の現在データを緊急バックアップとしてダウンロード
+                    const safetyBackup = {
+                        currentHorses: horses,
+                        raceHistories: raceHistories,
+                        gradeWinners: gradeWinners,
+                        exportDate: new Date().toISOString(),
+                        backupType: "restore_before_safety_backup"
+                    };
+                    downloadBackupObject(safetyBackup, "keiba_before_restore");
+
+                    // 既存値を退避し、保存に失敗した場合は元に戻す
+                    const keys = ["currentHorses", "raceHistories", "gradeWinners"];
+                    const previous = {};
+                    keys.forEach(key => { previous[key] = localStorage.getItem(key); });
+
+                    const nextHorses = parsed.currentHorses !== undefined ? parsed.currentHorses : horses;
+                    const nextHistories = parsed.raceHistories;
+                    const nextWinners = parsed.gradeWinners !== undefined ? parsed.gradeWinners : gradeWinners;
+
+                    try {
+                        localStorage.setItem("currentHorses", JSON.stringify(nextHorses));
+                        localStorage.setItem("raceHistories", JSON.stringify(nextHistories));
+                        localStorage.setItem("gradeWinners", JSON.stringify(nextWinners));
+                    } catch (storageError) {
+                        keys.forEach(key => {
+                            if (previous[key] === null) localStorage.removeItem(key);
+                            else localStorage.setItem(key, previous[key]);
+                        });
+                        throw storageError;
+                    }
+
+                    // 保存成功後に画面上のデータを更新
+                    horses = nextHorses;
+                    raceHistories = nextHistories;
+                    gradeWinners = nextWinners;
+                    renderDashboard();
+                    updateWinnerCountInfo();
+                    renderList();
+                    alert("データの復元が完了しました！\n復元前のデータも緊急バックアップとして保存しました。");
+                } catch (err) {
+                    console.error("データ復元エラー:", err);
+                    alert("JSONファイルの読み込み、またはデータ保存に失敗しました。\n現在のデータを確認し、必要に応じて緊急バックアップから復元してください。");
+                } finally {
+                    event.target.value = "";
                 }
             };
-            reader.readAsText(file);
-            event.target.value = "";
+            reader.onerror = function() {
+                alert("ファイルを読み込めませんでした。");
+                event.target.value = "";
+            };
+            reader.readAsText(file, "UTF-8");
         }
 
         function toggleHistoryOpen() {
