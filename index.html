@@ -10,16 +10,17 @@
             max-width: 800px;
             margin: 0 auto;
             padding: 15px;
-            background-color: #f5f5f7;
+            background-color: #ffffff;
             color: #333;
         }
         h1, h2, h3 { color: #1d1d1f; }
         .card {
             background: white;
+            border: 1px solid #e5e5ea;
             border-radius: 12px;
             padding: 16px;
             margin-bottom: 16px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
         }
         .btn {
             background-color: #0071e3;
@@ -110,8 +111,64 @@
             margin-bottom: 10px;
             padding: 10px;
             background: #fff;
-            border-radius: 4px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            border-radius: 6px;
+            border-top: 1px solid #eee;
+            border-right: 1px solid #eee;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+        .horse-card-info {
+            flex: 1;
+        }
+        .horse-card-rank-box {
+            width: 78px;
+            text-align: center;
+            flex-shrink: 0;
+        }
+        .horse-card-rank-box label {
+            display: block;
+            font-size: 11px;
+            color: #666;
+            font-weight: bold;
+            margin-bottom: 2px;
+        }
+        .rank-select-mini {
+            width: 100%;
+            padding: 8px 4px;
+            margin-bottom: 0;
+            text-align: center;
+            font-weight: bold;
+            font-size: 14px;
+            border: 1.5px solid #0071e3;
+            border-radius: 8px;
+            background-color: #f8fbff;
+            color: #1d1d1f;
+        }
+        .result-select-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .result-rank-badge {
+            width: 48px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 14px;
+            padding: 8px 0;
+            border-radius: 8px;
+            background: #f0f0f5;
+            flex-shrink: 0;
+        }
+        .result-rank-1 { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+        .result-rank-2 { background: #e2e8f0; color: #334155; border: 1px solid #cbd5e1; }
+        .result-rank-3 { background: #fde8e8; color: #9b1c1c; border: 1px solid #f8b4b4; }
+        .result-select-row select {
+            margin-bottom: 0;
+            flex: 1;
         }
         .tag {
             display: inline-block;
@@ -199,7 +256,10 @@
 
     <!-- 予想総合評価・ランキング -->
     <div class="card">
-        <h3>📊 総合評価・指数ランキング</h3>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <h3 style="margin:0;">📊 総合評価・指数ランキング</h3>
+            <span style="font-size:11px; color:#0071e3; font-weight:bold;">右端で1〜5着を選択可</span>
+        </div>
         <div id="rankingList">まだ登録されていません</div>
         <div id="raceAssessment" style="margin-top:12px; padding:12px; background:#f7f9fc; border:1px solid #d9e2ef; border-radius:10px;">
             <strong>🧭 レース評価・買い方判断</strong><br>出走表を登録すると判定します。
@@ -314,12 +374,30 @@
             </div>
         </div>
 
-        <label style="font-weight:bold; font-size:14px; margin-top:8px; display:block;">上位入線結果（1着〜5着馬名）</label>
-        <input type="text" id="result1" placeholder="1着馬名">
-        <input type="text" id="result2" placeholder="2着馬名">
-        <input type="text" id="result3" placeholder="3着馬名">
-        <input type="text" id="result4" placeholder="4着馬名">
-        <input type="text" id="result5" placeholder="5着馬名">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; margin-bottom:6px;">
+            <label style="font-weight:bold; font-size:14px; margin:0;">上位入線結果（1着〜5着を選択）</label>
+            <button type="button" onclick="clearResultSelections()" style="background:#f0f0f5; border:1px solid #ccc; border-radius:6px; padding:4px 8px; font-size:12px; cursor:pointer;">着順クリア</button>
+        </div>
+        <div class="result-select-row">
+            <span class="result-rank-badge result-rank-1">1着</span>
+            <select id="result1" onchange="syncCardRanksFromSelects()"></select>
+        </div>
+        <div class="result-select-row">
+            <span class="result-rank-badge result-rank-2">2着</span>
+            <select id="result2" onchange="syncCardRanksFromSelects()"></select>
+        </div>
+        <div class="result-select-row">
+            <span class="result-rank-badge result-rank-3">3着</span>
+            <select id="result3" onchange="syncCardRanksFromSelects()"></select>
+        </div>
+        <div class="result-select-row">
+            <span class="result-rank-badge">4着</span>
+            <select id="result4" onchange="syncCardRanksFromSelects()"></select>
+        </div>
+        <div class="result-select-row">
+            <span class="result-rank-badge">5着</span>
+            <select id="result5" onchange="syncCardRanksFromSelects()"></select>
+        </div>
 
         <button class="btn btn-success" id="saveBtn" onclick="saveRaceHistory()" style="margin-top: 12px;">💾 このレース結果・収支を保存</button>
         <button class="btn btn-danger" id="cancelEditBtn" onclick="cancelEdit()" style="margin-top: 6px; display: none;">❌ 編集をキャンセル</button>
@@ -574,6 +652,7 @@
         window.onload = function() {
             document.getElementById("raceDate").valueAsDate = new Date();
             updateCourseInfo();
+            populateResultSelects();
             loadSavedData();
             renderDashboard();
             renderBiasAnalytics();
@@ -598,6 +677,97 @@
             if (info) {
                 info.innerText = `現在登録済みの重賞勝ち馬マスター: ${gradeWinners.length} 馬`;
             }
+        }
+
+        // 1〜5着のプルダウン選択肢を出走馬から生成（既存の選択値や編集データも保持）
+        function populateResultSelects(presetValues) {
+            const ids = ["result1", "result2", "result3", "result4", "result5"];
+            const currentValues = presetValues || ids.map(id => {
+                const el = document.getElementById(id);
+                return el ? el.value : "";
+            });
+
+            // 馬番順で選択肢を作成
+            const sortedByNo = [...horses].sort((a, b) => (parseInt(a.no, 10) || 999) - (parseInt(b.no, 10) || 999));
+
+            ids.forEach((id, idx) => {
+                const sel = document.getElementById(id);
+                if (!sel) return;
+                const val = currentValues[idx] || "";
+
+                let optHtml = `<option value="">-- 選択してください --</option>`;
+                sortedByNo.forEach(h => {
+                    const name = (h.name || "").trim();
+                    if (!name) return;
+                    const noLabel = h.no ? `${h.no}番 ` : "";
+                    const selected = (name === val) ? "selected" : "";
+                    optHtml += `<option value="${escapeHtml(name)}" ${selected}>${escapeHtml(noLabel + name)}</option>`;
+                });
+
+                // 出走表クリア済みの履歴編集時など、現在のhorsesに存在しない馬名が指定されている場合も選択肢に追加
+                if (val && !sortedByNo.some(h => (h.name || "").trim() === val)) {
+                    optHtml += `<option value="${escapeHtml(val)}" selected>${escapeHtml(val)}</option>`;
+                }
+
+                sel.innerHTML = optHtml;
+            });
+
+            syncCardRanksFromSelects();
+        }
+
+        function escapeHtml(str) {
+            return String(str)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;");
+        }
+
+        // ランキングカードの右端プルダウンで着順を選んだとき、下の1〜5着フォームへ反映
+        function onCardRankChange(horseName, rankStr) {
+            const ids = ["result1", "result2", "result3", "result4", "result5"];
+
+            // すでに別の着順に入っていれば解除
+            ids.forEach(id => {
+                const el = document.getElementById(id);
+                if (el && el.value === horseName) {
+                    el.value = "";
+                }
+            });
+
+            // 新しい着順へセット
+            if (rankStr) {
+                const targetEl = document.getElementById("result" + rankStr);
+                if (targetEl) {
+                    targetEl.value = horseName;
+                }
+            }
+
+            syncCardRanksFromSelects();
+        }
+
+        // 下の1〜5着フォームの選択状態を、ランキングカード右端プルダウンへ同期
+        function syncCardRanksFromSelects() {
+            const rankMap = {};
+            for (let r = 1; r <= 5; r++) {
+                const el = document.getElementById("result" + r);
+                if (el && el.value) {
+                    rankMap[el.value] = String(r);
+                }
+            }
+
+            document.querySelectorAll(".rank-select-mini").forEach(sel => {
+                const hName = sel.getAttribute("data-horse");
+                sel.value = rankMap[hName] || "";
+            });
+        }
+
+        function clearResultSelections() {
+            for (let r = 1; r <= 5; r++) {
+                const el = document.getElementById("result" + r);
+                if (el) el.value = "";
+            }
+            syncCardRanksFromSelects();
         }
 
         function importBulk() {
@@ -658,6 +828,7 @@
             if(confirm("登録されている馬をすべて消去しますか？")) {
                 horses = [];
                 saveData();
+                clearResultSelections();
                 renderList();
             }
         }
@@ -775,23 +946,36 @@
                 const oddsVal = parseFloat(h.odds) || 0;
                 const isLongshot = (oddsVal >= 10.0 && idx < 5);
                 const longshotTag = isLongshot ? `<span class="tag tag-longshot">🔥 穴馬推奨</span>` : "";
+                const safeName = escapeHtml((h.name || "").trim());
 
                 html += `
                     <div class="horse-card">
-                        <strong>${idx + 1}位 ${h.frame}枠${h.no}番 ${h.name}</strong>（${h.jockey} / ${h.style}） ${winnerTag} ${pastTag} ${longshotTag}<br>
-                        <span class="tag">オッズ: ${h.odds}</span>
-                        <span class="tag">ランク: ${h.rank}</span>
-                        <span class="tag">期待値: ${h.value}</span>
-                        <span class="tag" style="background:#e3f2fd;">総合点: ${h.point}</span>
+                        <div class="horse-card-info">
+                            <strong>${idx + 1}位 ${h.frame}枠${h.no}番 ${h.name}</strong>（${h.jockey} / ${h.style}） ${winnerTag} ${pastTag} ${longshotTag}<br>
+                            <span class="tag">オッズ: ${h.odds}</span>
+                            <span class="tag">ランク: ${h.rank}</span>
+                            <span class="tag">期待値: ${h.value}</span>
+                            <span class="tag" style="background:#e3f2fd;">総合点: ${h.point}</span>
+                        </div>
+                        <div class="horse-card-rank-box">
+                            <label>着順</label>
+                            <select class="rank-select-mini" data-horse="${safeName}" onchange="onCardRankChange(this.getAttribute('data-horse'), this.value)">
+                                <option value="">-</option>
+                                <option value="1">1着</option>
+                                <option value="2">2着</option>
+                                <option value="3">3着</option>
+                                <option value="4">4着</option>
+                                <option value="5">5着</option>
+                            </select>
+                        </div>
                     </div>
                 `;
             });
             document.getElementById("rankingList").innerHTML = html || "まだ登録されていません";
+            populateResultSelects();
             renderRaceAssessment();
         }
 
-        // 保存済みの「入力されたバイアス記録」を競馬場・距離区分・馬場状態別に集計。
-        // 実際の着順や通過順から自動推定したものではないため、記録件数と併せて表示する。
         function renderBiasAnalytics() {
             const box = document.getElementById("trackBiasAnalytics");
             if (!box) return;
@@ -821,7 +1005,6 @@
             box.innerHTML = `<strong>📈 過去のバイアス記録</strong><br><span style="color:#345;">${track}・${distLabel}・${condition}</span><br>${summary}<br><span style="font-size:12px;color:#555;">対象 ${matching.length}件｜${reliability}</span><br><span style="font-size:12px;color:#555;">${countText}</span><br><span style="font-size:11px;color:#666;">※過去に手入力して保存したバイアスの集計です。着順から自動判定した結果ではありません。</span>`;
         }
 
-        // 信頼度と期待値を混同しない保守的なレース評価。具体的な的中確率・期待値は算出しない。
         function renderRaceAssessment() {
             const box = document.getElementById("raceAssessment");
             if (!box) return;
@@ -1012,13 +1195,14 @@
             document.getElementById("investmentInput").value = h.investment || "";
             document.getElementById("payout").value = h.payout || "";
             
-            if (h.results) {
-                document.getElementById("result1").value = h.results[0] || "";
-                document.getElementById("result2").value = h.results[1] || "";
-                document.getElementById("result3").value = h.results[2] || "";
-                document.getElementById("result4").value = h.results[3] || "";
-                document.getElementById("result5").value = h.results[4] || "";
-            }
+            const res = Array.isArray(h.results) ? [
+                h.results[0] || "",
+                h.results[1] || "",
+                h.results[2] || "",
+                h.results[3] || "",
+                h.results[4] || ""
+            ] : ["", "", "", "", ""];
+            populateResultSelects(res);
 
             document.getElementById("editingId").value = h.id;
             document.getElementById("formTitle").innerText = "📝 レース情報・収支の編集中（ID: " + h.id + "）";
@@ -1047,11 +1231,7 @@
             document.getElementById("betsInput").value = "";
             document.getElementById("investmentInput").value = "";
             document.getElementById("payout").value = "";
-            document.getElementById("result1").value = "";
-            document.getElementById("result2").value = "";
-            document.getElementById("result3").value = "";
-            document.getElementById("result4").value = "";
-            document.getElementById("result5").value = "";
+            clearResultSelections();
         }
 
         function deleteHistory(id) {
@@ -1132,7 +1312,6 @@
             downloadAnchor.remove();
         }
 
-        // 復元前のデータをJSONとして自動保存するための関数
         function downloadBackupObject(data, prefix) {
             const json = JSON.stringify(data, null, 2);
             const blob = new Blob([json], { type: "application/json;charset=utf-8" });
@@ -1162,7 +1341,6 @@
                 try {
                     const parsed = JSON.parse(e.target.result);
 
-                    // 必須データと、存在する場合の任意データを検証
                     const valid = parsed && typeof parsed === "object" &&
                         !Array.isArray(parsed) &&
                         isArrayOfObjects(parsed.raceHistories) &&
@@ -1191,7 +1369,6 @@
 
                     if (!confirm(message)) return;
 
-                    // 復元直前の現在データを緊急バックアップとしてダウンロード
                     const safetyBackup = {
                         currentHorses: horses,
                         raceHistories: raceHistories,
@@ -1201,7 +1378,6 @@
                     };
                     downloadBackupObject(safetyBackup, "keiba_before_restore");
 
-                    // 既存値を退避し、保存に失敗した場合は元に戻す
                     const keys = ["currentHorses", "raceHistories", "gradeWinners"];
                     const previous = {};
                     keys.forEach(key => { previous[key] = localStorage.getItem(key); });
@@ -1222,7 +1398,6 @@
                         throw storageError;
                     }
 
-                    // 保存成功後に画面上のデータを更新
                     horses = nextHorses;
                     raceHistories = nextHistories;
                     gradeWinners = nextWinners;
