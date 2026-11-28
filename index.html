@@ -123,10 +123,16 @@
         .horse-card-info {
             flex: 1;
         }
+        .horse-card-actions {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 6px;
+            flex-shrink: 0;
+        }
         .horse-card-rank-box {
             width: 78px;
             text-align: center;
-            flex-shrink: 0;
         }
         .horse-card-rank-box label {
             display: block;
@@ -137,7 +143,7 @@
         }
         .rank-select-mini {
             width: 100%;
-            padding: 8px 4px;
+            padding: 6px 4px;
             margin-bottom: 0;
             text-align: center;
             font-weight: bold;
@@ -146,6 +152,49 @@
             border-radius: 8px;
             background-color: #f8fbff;
             color: #1d1d1f;
+        }
+        .btn-scratch {
+            background-color: #fff1f0;
+            color: #cf1322;
+            border: 1px solid #ffa39e;
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            width: 78px;
+        }
+        .btn-scratch:hover {
+            background-color: #ffccc7;
+        }
+        .scratched-box {
+            margin-top: 10px;
+            padding: 10px;
+            background: #fafafa;
+            border: 1px dashed #ccc;
+            border-radius: 8px;
+            font-size: 13px;
+        }
+        .scratched-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 0;
+            border-bottom: 1px solid #eee;
+            color: #777;
+        }
+        .scratched-item:last-child {
+            border-bottom: none;
+        }
+        .btn-restore-horse {
+            background: #e6f2ff;
+            color: #0071e3;
+            border: 1px solid #91caff;
+            border-radius: 6px;
+            padding: 3px 8px;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
         }
         .result-select-row {
             display: flex;
@@ -258,9 +307,10 @@
     <div class="card">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
             <h3 style="margin:0;">📊 総合評価・指数ランキング</h3>
-            <span style="font-size:11px; color:#0071e3; font-weight:bold;">右端で1〜5着を選択可</span>
+            <span style="font-size:11px; color:#0071e3; font-weight:bold;">着順選択 / 出走取消</span>
         </div>
         <div id="rankingList">まだ登録されていません</div>
+        <div id="scratchedList"></div>
         <div id="raceAssessment" style="margin-top:12px; padding:12px; background:#f7f9fc; border:1px solid #d9e2ef; border-radius:10px;">
             <strong>🧭 レース評価・買い方判断</strong><br>出走表を登録すると判定します。
         </div>
@@ -679,7 +729,28 @@
             }
         }
 
-        // 1〜5着のプルダウン選択肢を出走馬から生成（既存の選択値や編集データも保持）
+        // 出走取消・解除の切り替え
+        function toggleScratchHorse(horseName, noStr) {
+            const idx = horses.findIndex(h => (h.name || "").trim() === horseName && String(h.no || "") === String(noStr || ""));
+            if (idx === -1) return;
+
+            horses[idx].scratched = !horses[idx].scratched;
+
+            // 取消にした場合、もし1〜5着に選ばれていたら解除する
+            if (horses[idx].scratched) {
+                for (let r = 1; r <= 5; r++) {
+                    const el = document.getElementById("result" + r);
+                    if (el && el.value === horseName) {
+                        el.value = "";
+                    }
+                }
+            }
+
+            saveData();
+            renderList();
+        }
+
+        // 1〜5着のプルダウン選択肢を出走馬（取消馬を除く）から生成
         function populateResultSelects(presetValues) {
             const ids = ["result1", "result2", "result3", "result4", "result5"];
             const currentValues = presetValues || ids.map(id => {
@@ -687,8 +758,9 @@
                 return el ? el.value : "";
             });
 
-            // 馬番順で選択肢を作成
-            const sortedByNo = [...horses].sort((a, b) => (parseInt(a.no, 10) || 999) - (parseInt(b.no, 10) || 999));
+            // 出走取消になっていない馬のみを馬番順で並べる
+            const activeHorses = horses.filter(h => !h.scratched);
+            const sortedByNo = [...activeHorses].sort((a, b) => (parseInt(a.no, 10) || 999) - (parseInt(b.no, 10) || 999));
 
             ids.forEach((id, idx) => {
                 const sel = document.getElementById(id);
@@ -704,7 +776,7 @@
                     optHtml += `<option value="${escapeHtml(name)}" ${selected}>${escapeHtml(noLabel + name)}</option>`;
                 });
 
-                // 出走表クリア済みの履歴編集時など、現在のhorsesに存在しない馬名が指定されている場合も選択肢に追加
+                // 出走表クリア済みの履歴編集時など、現在のactiveHorsesに存在しない馬名が指定されている場合も選択肢に追加
                 if (val && !sortedByNo.some(h => (h.name || "").trim() === val)) {
                     optHtml += `<option value="${escapeHtml(val)}" selected>${escapeHtml(val)}</option>`;
                 }
@@ -727,7 +799,6 @@
         function onCardRankChange(horseName, rankStr) {
             const ids = ["result1", "result2", "result3", "result4", "result5"];
 
-            // すでに別の着順に入っていれば解除
             ids.forEach(id => {
                 const el = document.getElementById(id);
                 if (el && el.value === horseName) {
@@ -735,7 +806,6 @@
                 }
             });
 
-            // 新しい着順へセット
             if (rankStr) {
                 const targetEl = document.getElementById("result" + rankStr);
                 if (targetEl) {
@@ -813,7 +883,8 @@
                     style: style,
                     odds: odds,
                     rank: getRankFromOdds(odds),
-                    value: getValueFromOdds(odds)
+                    value: getValueFromOdds(odds),
+                    scratched: false
                 });
                 count++;
             });
@@ -869,7 +940,10 @@
             const currentBias = document.getElementById("bias") ? document.getElementById("bias").value : "内前有利";
             const pastPerformers = getPastTop5HorseNames();
 
-            return horses.map(h => {
+            // 出走取消の馬はランキング対象から除外
+            const activeHorses = horses.filter(h => !h.scratched);
+
+            return activeHorses.map(h => {
                 let pt = 50;
                 const o = parseFloat(h.odds) || 99;
 
@@ -947,6 +1021,7 @@
                 const isLongshot = (oddsVal >= 10.0 && idx < 5);
                 const longshotTag = isLongshot ? `<span class="tag tag-longshot">🔥 穴馬推奨</span>` : "";
                 const safeName = escapeHtml((h.name || "").trim());
+                const safeNo = escapeHtml(String(h.no || ""));
 
                 html += `
                     <div class="horse-card">
@@ -957,21 +1032,46 @@
                             <span class="tag">期待値: ${h.value}</span>
                             <span class="tag" style="background:#e3f2fd;">総合点: ${h.point}</span>
                         </div>
-                        <div class="horse-card-rank-box">
-                            <label>着順</label>
-                            <select class="rank-select-mini" data-horse="${safeName}" onchange="onCardRankChange(this.getAttribute('data-horse'), this.value)">
-                                <option value="">-</option>
-                                <option value="1">1着</option>
-                                <option value="2">2着</option>
-                                <option value="3">3着</option>
-                                <option value="4">4着</option>
-                                <option value="5">5着</option>
-                            </select>
+                        <div class="horse-card-actions">
+                            <div class="horse-card-rank-box">
+                                <label>着順</label>
+                                <select class="rank-select-mini" data-horse="${safeName}" onchange="onCardRankChange(this.getAttribute('data-horse'), this.value)">
+                                    <option value="">-</option>
+                                    <option value="1">1着</option>
+                                    <option value="2">2着</option>
+                                    <option value="3">3着</option>
+                                    <option value="4">4着</option>
+                                    <option value="5">5着</option>
+                                </select>
+                            </div>
+                            <button type="button" class="btn-scratch" data-horse="${safeName}" data-no="${safeNo}" onclick="toggleScratchHorse(this.getAttribute('data-horse'), this.getAttribute('data-no'))">🚫 取消</button>
                         </div>
                     </div>
                 `;
             });
             document.getElementById("rankingList").innerHTML = html || "まだ登録されていません";
+
+            // 出走取消馬リストの表示
+            const scratchedHorses = horses.filter(h => h.scratched);
+            const scratchedBox = document.getElementById("scratchedList");
+            if (scratchedHorses.length > 0) {
+                let sHtml = `<div class="scratched-box"><div style="font-weight:bold; color:#cf1322; margin-bottom:4px;">🚫 出走取消・除外（${scratchedHorses.length}頭）</div>`;
+                scratchedHorses.forEach(sh => {
+                    const safeName = escapeHtml((sh.name || "").trim());
+                    const safeNo = escapeHtml(String(sh.no || ""));
+                    sHtml += `
+                        <div class="scratched-item">
+                            <span><s>${sh.frame}枠${sh.no}番 ${sh.name}</s>（${sh.jockey} / ${sh.style}）</span>
+                            <button type="button" class="btn-restore-horse" data-horse="${safeName}" data-no="${safeNo}" onclick="toggleScratchHorse(this.getAttribute('data-horse'), this.getAttribute('data-no'))">↩️ 取消解除</button>
+                        </div>
+                    `;
+                });
+                sHtml += `</div>`;
+                scratchedBox.innerHTML = sHtml;
+            } else {
+                scratchedBox.innerHTML = "";
+            }
+
             populateResultSelects();
             renderRaceAssessment();
         }
